@@ -1,0 +1,91 @@
+{
+  "scenes": [
+    {
+      "id": "hacker-ambush",
+      "name": "해커 친구 습격",
+      "caller": {
+        "name": "민재",
+        "initial": "M",
+        "number": "010-7742-0913"
+      },
+      "beats": [
+        {
+          "delay": 500,
+          "type": "dialogue",
+          "speaker": "caller",
+          "text": "야, 네가 부탁한 서버 기록 찾았어."
+        },
+        {
+          "delay": 3600,
+          "type": "dialogue",
+          "speaker": "caller",
+          "text": "그런데 내가 그것보다 훨씬 중요한 걸 발견했어. 잘 들어봐."
+        },
+        {
+          "delay": 8000,
+          "type": "stage",
+          "text": "[똑, 똑, 똑]",
+          "effect": "knock"
+        },
+        {
+          "delay": 9500,
+          "type": "dialogue",
+          "speaker": "caller",
+          "text": "어, 잠깐. 나 저녁 시킨 거 왔나 봐. 끊지 말고 있어."
+        },
+        {
+          "delay": 13500,
+          "type": "stage",
+          "text": "[민재가 전화기를 내려놓고 현관으로 걸어간다]",
+          "effect": "steps"
+        },
+        {
+          "delay": 16500,
+          "type": "stage",
+          "text": "[문 잠금이 풀리고 현관문이 열린다]"
+        },
+        {
+          "delay": 18500,
+          "type": "stage",
+          "text": "[문이 열리자마자 거친 충돌음과 함께 가구가 넘어간다]",
+          "effect": "impact"
+        },
+        {
+          "delay": 20500,
+          "type": "dialogue",
+          "speaker": "caller",
+          "text": "뭐야— 씨발! 도망쳐! 지금 당장 거기서 나가! 그놈들이 이미—"
+        },
+        {
+          "delay": 23500,
+          "type": "stage",
+          "text": "[충격음 뒤로 긴 정적이 흐른다]",
+          "effect": "impact"
+        },
+        {
+          "delay": 27500,
+          "type": "stage",
+          "text": "[누군가 전화기 쪽으로 천천히 다가온다]",
+          "effect": "steps"
+        },
+        {
+          "delay": 30000,
+          "type": "dialogue",
+          "speaker": "unknown",
+          "text": "……뭐야. 전화 중이었나?"
+        },
+        {
+          "delay": 33000,
+          "type": "dialogue",
+          "speaker": "unknown",
+          "text": "누구든 간에, 너무 늦었어."
+        },
+        {
+          "delay": 35500,
+          "type": "end",
+          "effect": "disconnect"
+        }
+      ]
+    }
+  ]
+}

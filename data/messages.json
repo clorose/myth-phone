@@ -1,0 +1,76 @@
+{
+  "conversations": [
+    {
+      "id": "sms-jia",
+      "name": "지아",
+      "initial": "J",
+      "preview": "약속 장소가 바뀌었어.",
+      "listTime": "오후 9:42",
+      "unread": 2,
+      "status": "온라인",
+      "timelineTime": "오늘 오후 9:40",
+      "messages": [
+        {
+          "direction": "received",
+          "text": "지금 어디야?"
+        },
+        {
+          "direction": "sent",
+          "text": "거의 다 왔어."
+        },
+        {
+          "direction": "received",
+          "text": "약속 장소가 바뀌었어."
+        }
+      ]
+    },
+    {
+      "id": "sms-repair-shop",
+      "name": "정비소",
+      "initial": "修",
+      "preview": "수리는 내일 끝납니다.",
+      "listTime": "오후 7:18",
+      "unread": 0,
+      "status": "영업 종료",
+      "timelineTime": "오늘 오후 7:16",
+      "messages": [
+        {
+          "direction": "received",
+          "text": "맡기신 차량 점검이 끝났습니다."
+        },
+        {
+          "direction": "sent",
+          "text": "오늘 찾으러 가도 될까요?"
+        },
+        {
+          "direction": "received",
+          "text": "수리는 내일 끝납니다."
+        }
+      ]
+    },
+    {
+      "id": "sms-unknown",
+      "name": "알 수 없음",
+      "initial": "?",
+      "preview": "발신자를 믿지 마.",
+      "listTime": "어제",
+      "unread": 1,
+      "status": "알 수 없는 발신자",
+      "timelineTime": "어제 오후 11:52",
+      "messages": [
+        {
+          "direction": "received",
+          "text": "이 번호를 저장하지 마."
+        },
+        {
+          "direction": "sent",
+          "text": "누구세요?"
+        },
+        {
+          "direction": "received",
+          "text": "발신자를 믿지 마."
+        }
+      ]
+    }
+  ]
+}
