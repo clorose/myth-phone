@@ -1,0 +1,35 @@
+{
+  "id": "myth-phone",
+  "title": "MythPhone",
+  "description": "Foundry VTT 안에서 사용할 수 있는 스마트폰 인터페이스입니다.",
+  "version": "0.1.0",
+  "authors": [
+    {
+      "name": "heun1"
+    }
+  ],
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14"
+  },
+  "esmodules": [
+    "scripts/myth-phone.js"
+  ],
+  "styles": [
+    "styles/myth-phone.css"
+  ],
+  "flags": {
+    "hotReload": {
+      "extensions": [
+        "css",
+        "hbs",
+        "json"
+      ],
+      "paths": [
+        "styles",
+        "templates",
+        "lang"
+      ]
+    }
+  }
+}
