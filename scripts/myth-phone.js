@@ -552,6 +552,11 @@ class SmartphoneShell {
       ? this.messageData.bubbletalk.filter((conversation) => conversation.type === "group")
       : this.messageData.bubbletalk.filter((conversation) => conversation.type !== "group");
     const isFriends = section === "friends";
+    const unreadOf = (predicate) => this.messageData.bubbletalk
+      .filter(predicate)
+      .reduce((sum, conversation) => sum + (conversation.unread || 0), 0);
+    const directUnread = unreadOf((conversation) => conversation.type !== "group");
+    const groupUnread = unreadOf((conversation) => conversation.type === "group");
 
     content.innerHTML = `
       <header class="phone-page-header bubbletalk-page-header">
@@ -584,11 +589,13 @@ class SmartphoneShell {
           data-bubbletalk-section="chats" ${section === "chats" ? 'aria-current="page"' : ""}>
           <i class="fa-solid fa-comment"></i>
           <span>채팅</span>
+          ${directUnread ? `<b class="bubbletalk-tab-badge">${directUnread}</b>` : ""}
         </button>
         <button class="${section === "groups" ? "is-active" : ""}" type="button"
           data-bubbletalk-section="groups" ${section === "groups" ? 'aria-current="page"' : ""}>
           <i class="fa-solid fa-user-group"></i>
           <span>단체 대화</span>
+          ${groupUnread ? `<b class="bubbletalk-tab-badge">${groupUnread}</b>` : ""}
         </button>
       </nav>
     `;
@@ -639,20 +646,27 @@ class SmartphoneShell {
     return `
       <button class="bubbletalk-conversation" type="button"
         data-conversation-id="${conversation.id}" data-name="${conversation.name}">
-        <span class="bubbletalk-room-avatar ${isGroup ? "is-group" : ""}">
-          <span>${conversation.initial}</span>
-          ${isGroup ? `<i class="fa-solid fa-user-group" aria-hidden="true"></i>` : ""}
-        </span>
+        ${isGroup && conversation.participants?.length
+          ? `<span class="bubbletalk-room-avatar is-mosaic">${
+              conversation.participants.slice(0, 4).map((member) =>
+                `<b style="background:${member.color}">${member.initial}</b>`).join("")
+            }</span>`
+          : `<span class="bubbletalk-room-avatar ${isGroup ? "is-group" : ""}">
+              <span>${conversation.initial}</span>
+              ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
+              ${isGroup ? `<i class="fa-solid fa-user-group" aria-hidden="true"></i>` : ""}
+            </span>`}
         <span class="bubbletalk-room-copy">
           <span class="bubbletalk-room-title">
             <strong>${conversation.name}</strong>
             ${isGroup ? `<small>${conversation.participantCount ?? ""}</small>` : ""}
+            ${conversation.muted ? '<i class="fa-solid fa-bell-slash bubbletalk-mute" aria-label="알림 꺼짐"></i>' : ""}
           </span>
           <small>${conversation.preview}</small>
         </span>
         <span class="bubbletalk-room-meta">
           <time>${conversation.listTime}</time>
-          ${conversation.unread ? `<b>${conversation.unread}</b>` : ""}
+          ${conversation.unread ? `<b class="${conversation.muted ? "is-quiet" : ""}">${conversation.unread}</b>` : ""}
         </span>
       </button>
     `;
@@ -721,16 +735,29 @@ class SmartphoneShell {
         <button class="bubbletalk-inline-back" type="button" aria-label="대화 목록">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
+        <span class="bubbletalk-chat-avatar">
+          <span>${conversation.initial}</span>
+          ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
+        </span>
         <div class="bubbletalk-chat-title">
           <strong>${conversation.name}</strong>
           <small>${isGroup ? `${conversation.participantCount ?? ""}명 참여` : conversation.status}</small>
         </div>
+        <button type="button" aria-label="통화"><i class="fa-solid fa-phone"></i></button>
         <button type="button" aria-label="대화 검색"><i class="fa-solid fa-magnifying-glass"></i></button>
         <button type="button" aria-label="대화 메뉴"><i class="fa-solid fa-bars"></i></button>
       </header>
       <div class="bubbletalk-chat-log">
         ${conversation.timelineTime ? `<time>${conversation.timelineTime}</time>` : ""}
-        ${conversation.messages.map((message) => this.bubbleTalkMessage(message, conversation)).join("")}
+        ${conversation.messages.map((message, index) => {
+          const sameGroup = (a, b) => Boolean(a && b)
+            && a.direction === b.direction && a.sender === b.sender;
+          return this.bubbleTalkMessage(message, conversation, {
+            first: !sameGroup(conversation.messages[index - 1], message),
+            last: !sameGroup(message, conversation.messages[index + 1])
+          });
+        }).join("")}
+        ${conversation.typing ? this.bubbleTalkTyping(conversation) : ""}
       </div>
       <form class="bubbletalk-composer">
         <button type="button" aria-label="첨부"><i class="fa-solid fa-plus"></i></button>
@@ -760,7 +787,7 @@ class SmartphoneShell {
     });
   }
 
-  static bubbleTalkMessage(message, conversation) {
+  static bubbleTalkMessage(message, conversation, { first = true, last = true } = {}) {
     const isSent = message.direction === "sent";
     const senderName = message.sender ?? (
       conversation.type === "group" ? message.text.split(":")[0] : conversation.name
@@ -768,24 +795,42 @@ class SmartphoneShell {
     const displayText = conversation.type === "group" && !isSent && !message.sender && message.text.includes(":")
       ? message.text.slice(message.text.indexOf(":") + 1).trim()
       : message.text;
+    const contClass = first ? "" : " is-cont";
+    const bubbleClass = first ? ' class="is-first"' : "";
+    const meta = last
+      ? `<span class="bubbletalk-message-meta">${
+          isSent && message.read === false ? '<b class="bubbletalk-read">1</b>' : ""
+        }<time>${message.time ?? ""}</time></span>`
+      : "";
 
     if (isSent) {
       return `
-        <div class="bubbletalk-message is-sent">
-          <time>${message.time ?? ""}</time>
-          <p>${displayText}</p>
+        <div class="bubbletalk-message is-sent${contClass}">
+          ${meta}
+          <p${bubbleClass}>${displayText}</p>
         </div>
       `;
     }
 
     return `
-      <div class="bubbletalk-message is-received">
-        <span class="bubbletalk-message-avatar">${senderName.charAt(0)}</span>
+      <div class="bubbletalk-message is-received${contClass}">
+        <span class="bubbletalk-message-avatar${first ? "" : " is-ghost"}">${first ? senderName.charAt(0) : ""}</span>
         <div>
-          <strong>${senderName}</strong>
-          <p>${displayText}</p>
+          ${first ? `<strong>${senderName}</strong>` : ""}
+          <p${bubbleClass}>${displayText}</p>
         </div>
-        <time>${message.time ?? ""}</time>
+        ${meta}
+      </div>
+    `;
+  }
+
+  static bubbleTalkTyping(conversation) {
+    return `
+      <div class="bubbletalk-message is-received">
+        <span class="bubbletalk-message-avatar">${conversation.initial ?? "?"}</span>
+        <div>
+          <span class="bubbletalk-typing" role="status" aria-label="입력 중"><i></i><i></i><i></i></span>
+        </div>
       </div>
     `;
   }

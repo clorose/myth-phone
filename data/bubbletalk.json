@@ -33,6 +33,7 @@
       "preview": "로그 파일 확인해 볼게.",
       "listTime": "오후 10:14",
       "unread": 1,
+      "online": true,
       "status": "접속 중",
       "timelineTime": "오늘 오후 10:11",
       "messages": [
@@ -58,9 +59,11 @@
       "type": "direct",
       "name": "지아",
       "initial": "J",
-      "preview": "사진 한 장 보냈어.",
-      "listTime": "오후 8:46",
+      "preview": "들어가지 마. 지금 갈게.",
+      "listTime": "오후 8:47",
       "unread": 0,
+      "online": true,
+      "typing": true,
       "status": "접속 중",
       "timelineTime": "오늘 오후 8:44",
       "messages": [
@@ -78,6 +81,17 @@
           "direction": "received",
           "text": "사진 한 장 보냈어.",
           "time": "오후 8:46"
+        },
+        {
+          "direction": "received",
+          "text": "잠겨 있는데, 안에서 소리가 나.",
+          "time": "오후 8:46"
+        },
+        {
+          "direction": "sent",
+          "text": "들어가지 마. 지금 갈게.",
+          "time": "오후 8:47",
+          "read": false
         }
       ]
     },
@@ -87,9 +101,15 @@
       "name": "조사팀",
       "initial": "3",
       "participantCount": 3,
+      "participants": [
+        { "initial": "지", "color": "#8c82ed" },
+        { "initial": "민", "color": "#5fb3e8" },
+        { "initial": "강", "color": "#e88a5f" }
+      ],
       "preview": "강민: 각자 위치 공유해.",
       "listTime": "어제",
       "unread": 4,
+      "muted": true,
       "status": "멤버 3명",
       "timelineTime": "어제 오후 11:08",
       "messages": [
