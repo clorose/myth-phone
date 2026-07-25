@@ -2077,3 +2077,20 @@
 .bubbletalk-group-member input {
   margin: 0;
 }
+
+/* 연락처 편집 폼 삭제 버튼 */
+.phone-outgoing-actions .is-delete {
+  color: #fff;
+  background: #ef5753;
+}
+
+.phone-outgoing-form input[type="text"] {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  color: #202226;
+  background: #fff;
+  font-size: 12px;
+}
