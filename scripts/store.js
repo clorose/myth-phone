@@ -2,7 +2,7 @@
 // 렌더러는 여기서 데이터를 읽고, 데이터 변경은 emit으로 구독자에게 알린다.
 // (버블톡 실채팅 전환 시 ChatMessage 훅이 이 스토어를 갱신하는 구조를 전제)
 
-import { userDisplayName } from "./utils.js";
+import { userDisplayName, debug } from "./utils.js";
 
 const MODULE_ID = "myth-phone";
 
@@ -153,7 +153,10 @@ export const PhoneStore = {
     const authorId = message.author?.id;
     const participants = message.whisper.map(String);
     if (authorId) participants.push(authorId);
-    if (!participants.includes(game.user.id)) return;
+    if (!participants.includes(game.user.id)) {
+      debug(`버블톡 폐기 (참여자 아님): ${flag.roomId}`);
+      return;
+    }
 
     const room = this.roomFor(flag.roomId, flag.group ?? null);
     const entry = {
@@ -192,6 +195,7 @@ export const PhoneStore = {
     const map = { ...this.lastReadMap() };
     map[roomId] = Date.now();
     await game.user.setFlag(MODULE_ID, "lastRead", map);
+    debug(`읽음 처리: ${roomId}`);
     this.emit("unread-changed");
   },
 

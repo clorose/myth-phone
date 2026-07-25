@@ -790,6 +790,7 @@ class SmartphoneShell {
           }
         }
       });
+      debug(`단체방 생성: ${roomId} (${participantUserIds.length}명)`);
       this.renderBubbleTalkChat(content, roomId);
     });
   }
@@ -1112,6 +1113,7 @@ class SmartphoneShell {
       messageData.whisper = [conversation.otherUserId];
     }
 
+    debug(`버블톡 발신: ${conversation.id}${image ? " (사진)" : ""}`);
     ChatMessage.create(messageData);
   }
 
