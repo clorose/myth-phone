@@ -639,10 +639,11 @@ class SmartphoneShell {
       chats: "채팅",
       groups: "단체 대화"
     };
-    const realRooms = section === "chats"
-      ? realList.filter((room) => room.type !== "group")
-          .sort((a, b) => (b.listTime ?? 0) - (a.listTime ?? 0))
-      : [];
+    const realRooms = isFriends
+      ? []
+      : realList.filter((room) =>
+          section === "groups" ? room.type === "group" : room.type !== "group")
+          .sort((a, b) => (b.listTime ?? 0) - (a.listTime ?? 0));
     const conversations = [
       ...realRooms,
       ...(section === "groups"
@@ -669,7 +670,10 @@ class SmartphoneShell {
       <header class="phone-page-header bubbletalk-page-header">
         <p>BubbleTalk</p>
         <h2>${sectionNames[section]}</h2>
-        ${game.user.isGM ? `
+        ${section === "groups" ? `
+        <button class="bubbletalk-group-create" type="button" aria-label="단체 대화 만들기">
+          <i class="fa-solid fa-users-medical"></i>
+        </button>` : game.user.isGM ? `
         <button class="bubbletalk-npc-chat" type="button" aria-label="NPC 명의 대화">
           <i class="fa-solid fa-masks-theater"></i>
         </button>` : `
@@ -723,6 +727,70 @@ class SmartphoneShell {
     });
     content.querySelector(".bubbletalk-npc-chat")?.addEventListener("click", () => {
       this.renderNpcChatForm(content);
+    });
+    content.querySelector(".bubbletalk-group-create")?.addEventListener("click", () => {
+      this.renderGroupChatForm(content);
+    });
+  }
+
+  static renderGroupChatForm(content) {
+    const users = game.users.filter((user) => user.id !== game.user.id);
+
+    content.innerHTML = `
+      <header class="phone-page-header bubbletalk-page-header">
+        <p>BubbleTalk</p>
+        <h2>단체 대화 만들기</h2>
+        <button type="button" aria-label="닫기" class="bubbletalk-group-cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </header>
+      <form class="phone-outgoing-form bubbletalk-group-form">
+        <label>대화방 이름
+          <input name="roomName" type="text" maxlength="30" placeholder="예: 조사팀" required>
+        </label>
+        <label>참여자</label>
+        <div class="bubbletalk-group-members">
+          ${users.map((user) => `
+            <label class="bubbletalk-group-member">
+              <input type="checkbox" name="member" value="${user.id}">
+              <span>${esc(user.name)}${user.active ? "" : " (오프라인)"}</span>
+            </label>`).join("")}
+        </div>
+        <div class="phone-outgoing-actions">
+          <button class="is-cancel" type="button">취소</button>
+          <button class="is-send" type="submit"><i class="fa-solid fa-user-group"></i> 만들기</button>
+        </div>
+      </form>
+    `;
+
+    const cancel = () => this.renderBubbleTalk(content, "groups");
+    content.querySelector(".bubbletalk-group-cancel").addEventListener("click", cancel);
+    content.querySelector(".is-cancel").addEventListener("click", cancel);
+    content.querySelector(".bubbletalk-group-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const name = form.elements.roomName.value.trim();
+      const memberIds = Array.from(form.querySelectorAll('input[name="member"]:checked'))
+        .map((input) => input.value);
+      if (!name || !memberIds.length) {
+        ui.notifications.warn("대화방 이름과 참여자를 선택하세요.");
+        return;
+      }
+
+      const roomId = `group:${foundry.utils.randomID()}`;
+      const participantUserIds = [game.user.id, ...memberIds];
+      await ChatMessage.create({
+        content: `${game.user.name} 님이 대화를 시작했습니다.`,
+        whisper: memberIds,
+        flags: {
+          [MODULE_ID]: {
+            app: "bubbletalk",
+            roomId,
+            group: { name, participantUserIds }
+          }
+        }
+      });
+      this.renderBubbleTalkChat(content, roomId);
     });
   }
 
@@ -883,7 +951,7 @@ class SmartphoneShell {
   }
 
   static renderBubbleTalkChat(content, conversationId) {
-    const conversation = conversationId.startsWith("direct:") || conversationId.startsWith("npc:")
+    const conversation = /^(direct|npc|group):/.test(conversationId)
       ? PhoneStore.roomFor(conversationId)
       : this.messageData.bubbletalk.find((item) => item.id === conversationId);
     if (!conversation) {
@@ -943,7 +1011,15 @@ class SmartphoneShell {
           flags: { [MODULE_ID]: { app: "bubbletalk", roomId: conversation.id } }
         };
 
-        if (isNpcRoom && game.user.isGM) {
+        if (conversation.type === "group") {
+          // 단체톡: 참여자 전원 귓속말 + 방 메타를 플래그에 실어 복원 가능하게
+          messageData.whisper = conversation.participantUserIds
+            .filter((id) => id !== game.user.id);
+          messageData.flags[MODULE_ID].group = {
+            name: conversation.name,
+            participantUserIds: conversation.participantUserIds
+          };
+        } else if (isNpcRoom && game.user.isGM) {
           // GM → 플레이어: 선택한 NPC Actor를 화자로
           const actor = game.actors.get(conversation.npcActorId);
           messageData.whisper = [conversation.targetUserId];

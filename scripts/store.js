@@ -60,11 +60,30 @@ export const PhoneStore = {
     return `npc:${actorId}:${userId}`;
   },
 
-  roomFor(roomId) {
-    if (this.rooms.has(roomId)) return this.rooms.get(roomId);
+  groupPalette: ["#8c82ed", "#5fb3e8", "#e88a5f", "#6cc19a"],
+
+  roomFor(roomId, groupMeta = null) {
+    if (this.rooms.has(roomId)) {
+      const existing = this.rooms.get(roomId);
+      if (groupMeta) this.applyGroupMeta(existing, groupMeta);
+      return existing;
+    }
 
     let room;
-    if (roomId.startsWith("npc:")) {
+    if (roomId.startsWith("group:")) {
+      room = {
+        id: roomId,
+        type: "group",
+        real: true,
+        name: "단체 대화",
+        participantUserIds: [],
+        participantCount: 0,
+        initial: "단",
+        status: "단체 대화",
+        messages: []
+      };
+      if (groupMeta) this.applyGroupMeta(room, groupMeta);
+    } else if (roomId.startsWith("npc:")) {
       // GM이 NPC Actor 명의로 특정 플레이어와 나누는 개인톡
       const [, actorId, userId] = roomId.split(":");
       const actor = game.actors.get(actorId);
@@ -102,6 +121,19 @@ export const PhoneStore = {
     return room;
   },
 
+  applyGroupMeta(room, meta) {
+    room.name = meta.name ?? room.name;
+    room.participantUserIds = meta.participantUserIds ?? room.participantUserIds;
+    room.participantCount = room.participantUserIds.length;
+    room.initial = Array.from(room.name)[0];
+    room.status = `멤버 ${room.participantCount}명`;
+    // 목록 모자이크 아바타용
+    room.participants = room.participantUserIds.slice(0, 4).map((id, index) => ({
+      initial: Array.from(game.users.get(id)?.name ?? "?")[0],
+      color: this.groupPalette[index % this.groupPalette.length]
+    }));
+  },
+
   // 월드의 기존 ChatMessage에서 참여 중인 버블톡 방을 복원한다.
   buildRooms() {
     this.rooms = new Map();
@@ -120,7 +152,7 @@ export const PhoneStore = {
     if (authorId) participants.push(authorId);
     if (!participants.includes(game.user.id)) return;
 
-    const room = this.roomFor(flag.roomId);
+    const room = this.roomFor(flag.roomId, flag.group ?? null);
     const entry = {
       authorId,
       // NPC 명의 메시지는 speaker.alias(Actor 이름)를 표시 이름으로 쓴다
