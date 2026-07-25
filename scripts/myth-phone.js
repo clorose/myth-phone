@@ -1474,8 +1474,11 @@ class SmartphoneShell {
         ${game.user.isGM ? `
         <button class="phone-log-full" type="button">
           <strong>전체 통합 로그</strong>
-          <span>기본 채팅 + 모든 방을 시간순으로 한 파일에 (방 라벨 포함)</span>
-        </button>` : ""}
+          <span>기본 채팅 + NPC 방을 시간순으로 한 파일에 (방 라벨 포함)</span>
+        </button>
+        <label class="phone-log-option">
+          <input type="checkbox" name="includeGroups"> 통합 로그에 단체톡 포함
+        </label>` : ""}
         ${rooms.length ? rooms.map((room, index) => `
           <button type="button" data-export-index="${index}">
             <strong>${esc(room.name)}</strong>
@@ -1487,7 +1490,10 @@ class SmartphoneShell {
     `;
 
     content.querySelector(".phone-log-back").addEventListener("click", () => this.renderSettings(content));
-    content.querySelector(".phone-log-full")?.addEventListener("click", () => this.downloadFullLog());
+    content.querySelector(".phone-log-full")?.addEventListener("click", () => {
+      const includeGroups = content.querySelector('input[name="includeGroups"]')?.checked ?? false;
+      this.downloadFullLog(includeGroups);
+    });
     content.querySelectorAll("[data-export-index]").forEach((button) => {
       button.addEventListener("click", () => {
         this.downloadRoomLog(rooms[Number(button.dataset.exportIndex)]);
@@ -1497,7 +1503,7 @@ class SmartphoneShell {
 
   // GM 전용: 기본 채팅과 모든 버블톡 방을 시간순으로 합친 통합 로그.
   // 사적 대화가 시나리오상 중요해졌을 때 전체 흐름 안의 제자리에 놓고 정리하기 위한 것.
-  static downloadFullLog() {
+  static downloadFullLog(includeGroups = false) {
     const stamp = (time) => typeof time === "number"
       ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "short", timeStyle: "short" }).format(new Date(time))
       : "";
@@ -1511,8 +1517,9 @@ class SmartphoneShell {
     const sorted = Array.from(game.messages).sort((a, b) => a.timestamp - b.timestamp);
     const lines = sorted.map((message) => {
       const flag = message.flags?.[MODULE_ID];
-      // 유저 간 개인톡은 통합 로그에서도 제외
+      // 유저 간 개인톡은 통합 로그에서도 제외, 단체톡은 옵션
       if (flag?.roomId?.startsWith("direct:")) return null;
+      if (!includeGroups && flag?.roomId?.startsWith("group:")) return null;
       let label = "채팅";
       if (flag?.app === "bubbletalk" && flag.roomId) {
         if (flag.group?.name) roomNames.set(flag.roomId, `단체 - ${flag.group.name}`);

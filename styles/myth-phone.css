@@ -2094,3 +2094,17 @@
   background: #fff;
   font-size: 12px;
 }
+
+/* 로그 내보내기: 단체톡 포함 옵션 */
+.phone-log-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 16px 8px;
+  color: #68777e;
+  font-size: 11.5px;
+}
+
+.phone-log-option input {
+  margin: 0;
+}
