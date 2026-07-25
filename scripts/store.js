@@ -56,12 +56,37 @@ export const PhoneStore = {
     return `direct:${[userA, userB].sort().join(":")}`;
   },
 
+  npcRoomId(actorId, userId) {
+    return `npc:${actorId}:${userId}`;
+  },
+
   roomFor(roomId) {
-    if (!this.rooms.has(roomId)) {
+    if (this.rooms.has(roomId)) return this.rooms.get(roomId);
+
+    let room;
+    if (roomId.startsWith("npc:")) {
+      // GM이 NPC Actor 명의로 특정 플레이어와 나누는 개인톡
+      const [, actorId, userId] = roomId.split(":");
+      const actor = game.actors.get(actorId);
+      const user = game.users.get(userId);
+      const actorName = actor?.name ?? "알 수 없음";
+      room = {
+        id: roomId,
+        type: "direct",
+        real: true,
+        npcActorId: actorId,
+        targetUserId: userId,
+        name: game.user.isGM ? `${actorName} → ${user?.name ?? "?"}` : actorName,
+        initial: Array.from(actorName)[0].toLocaleUpperCase(),
+        online: true,
+        status: game.user.isGM ? "NPC 명의 대화" : "접속 중",
+        messages: []
+      };
+    } else {
       const ids = roomId.split(":").slice(1);
       const otherId = ids.find((id) => id !== game.user.id) ?? ids[0];
       const other = game.users.get(otherId);
-      this.rooms.set(roomId, {
+      room = {
         id: roomId,
         type: "direct",
         real: true,
@@ -71,9 +96,10 @@ export const PhoneStore = {
         online: other?.active ?? false,
         status: other?.active ? "접속 중" : "오프라인",
         messages: []
-      });
+      };
     }
-    return this.rooms.get(roomId);
+    this.rooms.set(roomId, room);
+    return room;
   },
 
   // 월드의 기존 ChatMessage에서 참여 중인 버블톡 방을 복원한다.
@@ -97,7 +123,8 @@ export const PhoneStore = {
     const room = this.roomFor(flag.roomId);
     const entry = {
       authorId,
-      authorName: message.author?.name ?? "알 수 없음",
+      // NPC 명의 메시지는 speaker.alias(Actor 이름)를 표시 이름으로 쓴다
+      authorName: message.speaker?.alias || message.author?.name || "알 수 없음",
       text: message.content,
       time: message.timestamp
     };

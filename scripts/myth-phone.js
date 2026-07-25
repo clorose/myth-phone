@@ -290,8 +290,12 @@ class SmartphoneShell {
     content.querySelector('[data-phone-tab="contacts"]').addEventListener("click", () => this.renderContacts(content));
   }
 
+  static npcActors() {
+    return game.actors.filter((actor) => !actor.hasPlayerOwner);
+  }
+
   static renderOutgoingCallForm(content) {
-    const actors = game.actors.contents;
+    const actors = this.npcActors();
     const players = game.users.filter((user) => user.active && !user.isGM);
     const scenes = Array.from(this.callScenes.values());
 
@@ -655,9 +659,13 @@ class SmartphoneShell {
       <header class="phone-page-header bubbletalk-page-header">
         <p>BubbleTalk</p>
         <h2>${sectionNames[section]}</h2>
+        ${game.user.isGM ? `
+        <button class="bubbletalk-npc-chat" type="button" aria-label="NPC 명의 대화">
+          <i class="fa-solid fa-masks-theater"></i>
+        </button>` : `
         <button type="button" aria-label="${isFriends ? "친구 추가" : "새 대화"}">
           <i class="fa-solid ${isFriends ? "fa-user-plus" : "fa-pen-to-square"}"></i>
-        </button>
+        </button>`}
       </header>
       <label class="phone-search">
         <i class="fa-solid fa-magnifying-glass"></i>
@@ -702,6 +710,56 @@ class SmartphoneShell {
       button.addEventListener("click", () => {
         this.renderBubbleTalk(content, button.dataset.bubbletalkSection);
       });
+    });
+    content.querySelector(".bubbletalk-npc-chat")?.addEventListener("click", () => {
+      this.renderNpcChatForm(content);
+    });
+  }
+
+  static renderNpcChatForm(content) {
+    const actors = this.npcActors();
+    const players = game.users.filter((user) => !user.isGM);
+
+    content.innerHTML = `
+      <header class="phone-page-header bubbletalk-page-header">
+        <p>BubbleTalk</p>
+        <h2>NPC 명의 대화</h2>
+        <button type="button" aria-label="닫기" class="bubbletalk-npc-cancel">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </header>
+      <form class="phone-outgoing-form bubbletalk-npc-form">
+        <label>발신 NPC
+          <select name="actorId">
+            ${actors.map((actor) => `<option value="${actor.id}">${esc(actor.name)}</option>`).join("")}
+          </select>
+        </label>
+        <label>대상 플레이어
+          <select name="userId">
+            ${players.map((user) => `<option value="${user.id}">${esc(user.name)}${user.active ? "" : " (오프라인)"}</option>`).join("")}
+          </select>
+        </label>
+        <div class="phone-outgoing-actions">
+          <button class="is-cancel" type="button">취소</button>
+          <button class="is-send" type="submit"><i class="fa-solid fa-comment"></i> 대화 열기</button>
+        </div>
+      </form>
+    `;
+
+    const cancel = () => this.renderBubbleTalk(content, "chats");
+    content.querySelector(".bubbletalk-npc-cancel").addEventListener("click", cancel);
+    content.querySelector(".is-cancel").addEventListener("click", cancel);
+    content.querySelector(".bubbletalk-npc-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const fields = event.currentTarget.elements;
+      if (!fields.actorId.value || !fields.userId.value) {
+        ui.notifications.warn("NPC와 대상 플레이어를 선택하세요.");
+        return;
+      }
+      this.renderBubbleTalkChat(
+        content,
+        PhoneStore.npcRoomId(fields.actorId.value, fields.userId.value)
+      );
     });
   }
 
@@ -815,7 +873,7 @@ class SmartphoneShell {
   }
 
   static renderBubbleTalkChat(content, conversationId) {
-    const conversation = conversationId.startsWith("direct:")
+    const conversation = conversationId.startsWith("direct:") || conversationId.startsWith("npc:")
       ? PhoneStore.roomFor(conversationId)
       : this.messageData.bubbletalk.find((item) => item.id === conversationId);
     if (!conversation) {
@@ -875,11 +933,25 @@ class SmartphoneShell {
       if (!text) return;
       if (conversation.real) {
         // 실채팅: DOM에 직접 넣지 않고 ChatMessage 생성 → createChatMessage 훅 경유 단일 경로
-        ChatMessage.create({
+        const isNpcRoom = conversation.id.startsWith("npc:");
+        const messageData = {
           content: text,
-          whisper: [conversation.otherUserId],
           flags: { [MODULE_ID]: { app: "bubbletalk", roomId: conversation.id } }
-        });
+        };
+
+        if (isNpcRoom && game.user.isGM) {
+          // GM → 플레이어: 선택한 NPC Actor를 화자로
+          const actor = game.actors.get(conversation.npcActorId);
+          messageData.whisper = [conversation.targetUserId];
+          messageData.speaker = { alias: actor?.name ?? "NPC", actor: actor?.id ?? null };
+        } else if (isNpcRoom) {
+          // 플레이어 답장 → GM 전원에게 귓속말, 같은 방으로
+          messageData.whisper = game.users.filter((user) => user.isGM).map((user) => user.id);
+        } else {
+          messageData.whisper = [conversation.otherUserId];
+        }
+
+        ChatMessage.create(messageData);
         input.value = "";
         return;
       }
