@@ -1436,7 +1436,7 @@ class SmartphoneShell {
         });
       }
       const room = rooms.get(flag.roomId);
-      if (flag.group?.name) room.name = `단체 - ${flag.group.name}`;
+      if (flag.group?.name) room.name = flag.group.name;
       room.messages.push({
         time: message.timestamp,
         name: message.speaker?.alias || message.author?.name || "?",
@@ -1447,16 +1447,16 @@ class SmartphoneShell {
   }
 
   static exportRoomName(roomId, flag) {
-    if (flag.group?.name) return `단체 - ${flag.group.name}`;
+    if (flag.group?.name) return flag.group.name;
     const [kind, first, second] = roomId.split(":");
     if (kind === "npc") {
       const actor = game.actors.get(first)?.name ?? "?";
       const user = game.users.get(second)?.name ?? "?";
-      return `NPC - ${actor} ↔ ${user}`;
+      return `${actor} ↔ ${user}`;
     }
     const userA = game.users.get(first)?.name ?? "?";
     const userB = game.users.get(second)?.name ?? "?";
-    return `개인 - ${userA} ↔ ${userB}`;
+    return `${userA} ↔ ${userB}`;
   }
 
   static renderLogExport(content) {
@@ -1501,8 +1501,8 @@ class SmartphoneShell {
     });
   }
 
-  // GM 전용: 기본 채팅과 모든 버블톡 방을 시간순으로 합친 통합 로그.
-  // 사적 대화가 시나리오상 중요해졌을 때 전체 흐름 안의 제자리에 놓고 정리하기 위한 것.
+  // GM 전용: 기본 채팅과 버블톡 방을 시간순으로 합친 통합 로그(HTML).
+  // 라벨 대신 방마다 다른 배경색으로 구분한다. 맨 위에 색상 범례.
   static downloadFullLog(includeGroups = false) {
     const stamp = (time) => typeof time === "number"
       ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "short", timeStyle: "short" }).format(new Date(time))
@@ -1512,31 +1512,66 @@ class SmartphoneShell {
       div.innerHTML = html ?? "";
       return div.textContent.trim();
     };
+    const palette = ["#e8f2fb", "#fdf0e4", "#eaf7ea", "#f6ecfa", "#fbeaea", "#f0f4e3"];
 
-    const roomNames = new Map();
+    const rooms = new Map(); // roomId → { name, color }
+    const roomInfo = (flag) => {
+      if (!rooms.has(flag.roomId)) {
+        rooms.set(flag.roomId, {
+          name: this.exportRoomName(flag.roomId, flag),
+          color: palette[rooms.size % palette.length]
+        });
+      }
+      if (flag.group?.name) rooms.get(flag.roomId).name = flag.group.name;
+      return rooms.get(flag.roomId);
+    };
+
     const sorted = Array.from(game.messages).sort((a, b) => a.timestamp - b.timestamp);
     const lines = sorted.map((message) => {
       const flag = message.flags?.[MODULE_ID];
       // 유저 간 개인톡은 통합 로그에서도 제외, 단체톡은 옵션
       if (flag?.roomId?.startsWith("direct:")) return null;
       if (!includeGroups && flag?.roomId?.startsWith("group:")) return null;
-      let label = "채팅";
-      if (flag?.app === "bubbletalk" && flag.roomId) {
-        if (flag.group?.name) roomNames.set(flag.roomId, `단체 - ${flag.group.name}`);
-        else if (!roomNames.has(flag.roomId)) {
-          roomNames.set(flag.roomId, this.exportRoomName(flag.roomId, flag));
-        }
-        label = roomNames.get(flag.roomId);
-      }
-      const name = message.speaker?.alias || message.author?.name || "?";
-      return `[${stamp(message.timestamp)}] [${label}] ${name}: ${stripHTML(message.content)}`;
-    });
 
-    const blob = new Blob([`# 통합 로그\n\n${lines.filter(Boolean).join("\n")}\n`], { type: "text/plain" });
+      const isPhone = flag?.app === "bubbletalk" && flag.roomId;
+      const color = isPhone ? roomInfo(flag).color : null;
+      const name = message.speaker?.alias || message.author?.name || "?";
+      return `<p class="line"${color ? ` style="background:${color}"` : ""}>`
+        + `<time>${stamp(message.timestamp)}</time>`
+        + `<b>${esc(name)}</b>${esc(stripHTML(message.content))}</p>`;
+    }).filter(Boolean);
+
+    const legend = rooms.size
+      ? `<div class="legend">${Array.from(rooms.values())
+          .map((room) => `<span><i style="background:${room.color}"></i>${esc(room.name)}</span>`)
+          .join("")}</div>`
+      : "";
+
+    const html = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>세션 로그</title>
+<style>
+  body { max-width: 760px; margin: 32px auto; padding: 0 16px;
+    font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.7; color: #222; }
+  h1 { font-size: 20px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0 22px;
+    font-size: 13px; color: #555; }
+  .legend i { display: inline-block; width: 12px; height: 12px; margin-right: 5px;
+    border-radius: 3px; vertical-align: -1px; }
+  .line { margin: 2px 0; padding: 3px 10px; border-radius: 7px; }
+  .line time { margin-right: 8px; color: #9aa3a8; font-size: 11px; }
+  .line b { margin-right: 7px; }
+</style></head><body>
+<h1>세션 로그</h1>
+${legend}
+${lines.join("\n")}
+</body></html>`;
+
+    const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "mythphone-full-log.txt";
+    link.download = "mythphone-session-log.html";
     link.click();
     URL.revokeObjectURL(url);
   }
