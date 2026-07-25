@@ -14,6 +14,7 @@ class SmartphoneShell {
   static ringtoneTimer;
   static ringtoneGeneration = 0;
   static audioContext;
+  static openBubbleRoomId = null;
 
   // 데이터는 PhoneStore가 원본. 기존 렌더러 호환용 접근자.
   static get callScenes() {
@@ -627,15 +628,22 @@ class SmartphoneShell {
   }
 
   static renderBubbleTalk(content, section = "friends") {
+    this.openBubbleRoomId = null;
     content.closest(".smartphone-app-view")?.classList.remove("is-chat-open");
     const sectionNames = {
       friends: "친구",
       chats: "채팅",
       groups: "단체 대화"
     };
-    const conversations = section === "groups"
-      ? this.messageData.bubbletalk.filter((conversation) => conversation.type === "group")
-      : this.messageData.bubbletalk.filter((conversation) => conversation.type !== "group");
+    const realRooms = section === "chats"
+      ? Array.from(PhoneStore.rooms.values()).sort((a, b) => (b.listTime ?? 0) - (a.listTime ?? 0))
+      : [];
+    const conversations = [
+      ...realRooms,
+      ...(section === "groups"
+        ? this.messageData.bubbletalk.filter((conversation) => conversation.type === "group")
+        : this.messageData.bubbletalk.filter((conversation) => conversation.type !== "group"))
+    ];
     const isFriends = section === "friends";
     const unreadOf = (predicate) => this.messageData.bubbletalk
       .filter(predicate)
@@ -698,19 +706,21 @@ class SmartphoneShell {
   }
 
   static bubbleTalkFriendItems() {
-    if (!this.messageData.bubbletalkFriends.length) {
+    const users = game.users.filter((user) => user.id !== game.user.id);
+    if (!users.length) {
       return `<div class="bubbletalk-empty"><i class="fa-solid fa-user-group"></i><p>등록된 친구가 없습니다.</p></div>`;
     }
 
-    return this.messageData.bubbletalkFriends.map((friend) => `
+    return users.map((user) => `
       <button class="bubbletalk-friend" type="button"
-        data-name="${esc(friend.name)}" ${friend.conversationId ? `data-conversation-id="${friend.conversationId}"` : ""}>
-        <span class="phone-avatar">${friend.initial}</span>
+        data-name="${esc(user.name)}"
+        data-conversation-id="${PhoneStore.directRoomId(game.user.id, user.id)}">
+        <span class="phone-avatar">${esc(Array.from(user.name)[0].toLocaleUpperCase())}</span>
         <span class="bubbletalk-friend-copy">
-          <strong>${esc(friend.name)}</strong>
-          <small>${esc(friend.status)}</small>
+          <strong>${esc(user.name)}</strong>
+          <small>${user.isGM ? "GM" : user.active ? "접속 중" : "오프라인"}</small>
         </span>
-        <i class="fa-solid fa-circle ${friend.online ? "is-online" : ""}" aria-label="${friend.online ? "접속 중" : "오프라인"}"></i>
+        <i class="fa-solid fa-circle ${user.active ? "is-online" : ""}" aria-label="${user.active ? "접속 중" : "오프라인"}"></i>
       </button>
     `).join("");
   }
@@ -805,15 +815,19 @@ class SmartphoneShell {
   }
 
   static renderBubbleTalkChat(content, conversationId) {
-    const conversation = this.messageData.bubbletalk.find(
-      (item) => item.id === conversationId
-    );
+    const conversation = conversationId.startsWith("direct:")
+      ? PhoneStore.roomFor(conversationId)
+      : this.messageData.bubbletalk.find((item) => item.id === conversationId);
     if (!conversation) {
       this.renderBubbleTalk(content, "chats");
       return;
     }
 
+    this.openBubbleRoomId = conversation.real ? conversation.id : null;
     const isGroup = conversation.type === "group";
+    const viewMessages = conversation.real
+      ? conversation.messages.map((entry) => this.bubbleTalkEntryView(entry))
+      : conversation.messages;
     content.closest(".smartphone-app-view")?.classList.add("is-chat-open");
     content.innerHTML = `
       <header class="bubbletalk-chat-header">
@@ -834,12 +848,12 @@ class SmartphoneShell {
       </header>
       <div class="bubbletalk-chat-log">
         ${conversation.timelineTime ? `<time>${esc(formatTime(conversation.timelineTime))}</time>` : ""}
-        ${conversation.messages.map((message, index) => {
+        ${viewMessages.map((message, index) => {
           const sameGroup = (a, b) => Boolean(a && b)
             && a.direction === b.direction && a.sender === b.sender;
           return this.bubbleTalkMessage(message, conversation, {
-            first: !sameGroup(conversation.messages[index - 1], message),
-            last: !sameGroup(message, conversation.messages[index + 1])
+            first: !sameGroup(viewMessages[index - 1], message),
+            last: !sameGroup(message, viewMessages[index + 1])
           });
         }).join("")}
         ${conversation.typing ? this.bubbleTalkTyping(conversation) : ""}
@@ -859,6 +873,16 @@ class SmartphoneShell {
       const input = event.currentTarget.elements.message;
       const text = input.value.trim();
       if (!text) return;
+      if (conversation.real) {
+        // 실채팅: DOM에 직접 넣지 않고 ChatMessage 생성 → createChatMessage 훅 경유 단일 경로
+        ChatMessage.create({
+          content: text,
+          whisper: [conversation.otherUserId],
+          flags: { [MODULE_ID]: { app: "bubbletalk", roomId: conversation.id } }
+        });
+        input.value = "";
+        return;
+      }
       const message = { direction: "sent", text, time: Date.now() };
       conversation.messages.push(message);
       conversation.preview = text;
@@ -907,6 +931,28 @@ class SmartphoneShell {
         ${meta}
       </div>
     `;
+  }
+
+  static bubbleTalkEntryView(entry) {
+    return {
+      direction: entry.authorId === game.user.id ? "sent" : "received",
+      sender: entry.authorName,
+      text: entry.text,
+      time: entry.time
+    };
+  }
+
+  static onBubbleTalkMessage(room, entry) {
+    debug(`버블톡 메시지 수신: ${room.id}`);
+    const content = this.wrapper?.querySelector(".smartphone-app-content");
+    const log = content?.querySelector(".bubbletalk-chat-log");
+    if (!log || this.openBubbleRoomId !== room.id) return;
+
+    log.insertAdjacentHTML(
+      "beforeend",
+      this.bubbleTalkMessage(this.bubbleTalkEntryView(entry), room)
+    );
+    log.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "end" });
   }
 
   static bubbleTalkTyping(conversation) {
@@ -1050,6 +1096,7 @@ class SmartphoneShell {
   static showHome(wrapper) {
     this.stopCallTimer();
     this.stopRingtone();
+    this.openBubbleRoomId = null;
     wrapper.querySelector(".smartphone-app-view").classList.remove("is-chat-open");
     wrapper.querySelector(".smartphone-app-view").classList.remove("is-call-screen");
     wrapper.querySelector(".smartphone-wallpaper").hidden = false;
@@ -1095,8 +1142,13 @@ Hooks.once("ready", () => {
     ui.notifications.info(`MythPhone | ${payload.targetName}: ${payload.callerName} 전화 ${payload.result}`);
   });
 
+  Hooks.on("createChatMessage", (message) => PhoneStore.addChatMessage(message));
+  PhoneStore.on("bubbletalk-message", ({ room, entry }) =>
+    SmartphoneShell.onBubbleTalkMessage(room, entry));
+
   PhoneStore.load()
     .then(() => {
+      PhoneStore.buildRooms();
       SmartphoneShell.mount();
       console.info(`${MODULE_ID} | MythPhone 인터페이스를 준비했습니다.`);
     })

@@ -16,6 +16,9 @@ export const PhoneStore = {
   // 최근 통화 기록: { name, time(timestamp), result("수신"|"거절"|"부재중") }
   // 현재는 클라이언트 세션 메모리에만 유지. 영구 저장은 별도 단계에서 처리.
   callLog: [],
+  // 실채팅 방: roomId → { id, type, real, otherUserId, name, initial, messages[] }
+  // 메시지 원본은 Foundry ChatMessage(귓속말)이고 여기는 화면용 사본.
+  rooms: new Map(),
 
   async load() {
     await Promise.all([this.loadCallScenes(), this.loadMessageData()]);
@@ -47,6 +50,61 @@ export const PhoneStore = {
         this.data.bubbletalkFriends = data.friends ?? [];
       }
     }
+  },
+
+  directRoomId(userA, userB) {
+    return `direct:${[userA, userB].sort().join(":")}`;
+  },
+
+  roomFor(roomId) {
+    if (!this.rooms.has(roomId)) {
+      const ids = roomId.split(":").slice(1);
+      const otherId = ids.find((id) => id !== game.user.id) ?? ids[0];
+      const other = game.users.get(otherId);
+      this.rooms.set(roomId, {
+        id: roomId,
+        type: "direct",
+        real: true,
+        otherUserId: otherId,
+        name: other?.name ?? "알 수 없음",
+        initial: Array.from(other?.name ?? "?")[0].toLocaleUpperCase(),
+        online: other?.active ?? false,
+        status: other?.active ? "접속 중" : "오프라인",
+        messages: []
+      });
+    }
+    return this.rooms.get(roomId);
+  },
+
+  // 월드의 기존 ChatMessage에서 참여 중인 버블톡 방을 복원한다.
+  buildRooms() {
+    this.rooms = new Map();
+    for (const message of game.messages ?? []) {
+      this.addChatMessage(message, { silent: true });
+    }
+  },
+
+  // 버블톡 ChatMessage를 방에 반영한다. 참여자가 아니면 폐기.
+  addChatMessage(message, { silent = false } = {}) {
+    const flag = message.flags?.["myth-phone"];
+    if (flag?.app !== "bubbletalk" || !flag.roomId) return;
+
+    const authorId = message.author?.id;
+    const participants = message.whisper.map(String);
+    if (authorId) participants.push(authorId);
+    if (!participants.includes(game.user.id)) return;
+
+    const room = this.roomFor(flag.roomId);
+    const entry = {
+      authorId,
+      authorName: message.author?.name ?? "알 수 없음",
+      text: message.content,
+      time: message.timestamp
+    };
+    room.messages.push(entry);
+    room.preview = entry.text;
+    room.listTime = entry.time;
+    if (!silent) this.emit("bubbletalk-message", { room, entry });
   },
 
   on(event, handler) {
