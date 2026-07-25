@@ -26,3 +26,18 @@ export function formatDuration(totalSeconds) {
   const seconds = String(totalSeconds % 60).padStart(2, "0");
   return `${minutes}:${seconds}`;
 }
+
+// 디버그 로그: 모듈 설정 "debugLog"가 켜져 있을 때만
+// 콘솔과 화면 알림으로 출력한다. 끄면 아무것도 하지 않는다.
+export function debug(...args) {
+  let enabled = false;
+  try {
+    enabled = game.settings.get("myth-phone", "debugLog");
+  } catch {
+    return;
+  }
+  if (!enabled) return;
+
+  console.log("myth-phone |", ...args);
+  ui.notifications?.info(`MythPhone 디버그 | ${args.map(String).join(" ")}`);
+}

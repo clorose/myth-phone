@@ -1,4 +1,4 @@
-import { escapeHTML as esc, formatTime, formatDuration } from "./utils.js";
+import { escapeHTML as esc, formatTime, formatDuration, debug } from "./utils.js";
 import { PhoneStore } from "./store.js";
 import { PhoneSocket } from "./socket.js";
 
@@ -350,8 +350,13 @@ class SmartphoneShell {
   }
 
   static receiveIncomingCall(payload) {
-    if (payload.targetUserId !== game.user.id) return;
+    if (payload.targetUserId !== game.user.id) {
+      debug(`incoming-call 폐기 (대상 아님: ${payload.targetUserId})`);
+      return;
+    }
     if (!this.wrapper) return;
+
+    debug(`전화 수신 처리: ${payload.sceneId} (${payload.caller?.name})`);
 
     this.phone.classList.add("is-open");
     this.phone.setAttribute("aria-hidden", "false");
@@ -1070,6 +1075,17 @@ class SmartphoneShell {
     this.phone?.setAttribute("aria-hidden", "true");
   }
 }
+
+Hooks.once("init", () => {
+  game.settings.register(MODULE_ID, "debugLog", {
+    name: "디버그 로그",
+    hint: "소켓 송수신 등 내부 동작을 콘솔과 화면 알림으로 표시합니다.",
+    scope: "client",
+    config: true,
+    type: Boolean,
+    default: false
+  });
+});
 
 Hooks.once("ready", () => {
   PhoneSocket.register();
