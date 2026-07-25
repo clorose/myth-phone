@@ -1469,6 +1469,11 @@ class SmartphoneShell {
         </button>
       </header>
       <div class="phone-note-list">
+        ${game.user.isGM ? `
+        <button class="phone-log-full" type="button">
+          <strong>전체 통합 로그</strong>
+          <span>기본 채팅 + 모든 방을 시간순으로 한 파일에 (방 라벨 포함)</span>
+        </button>` : ""}
         ${rooms.length ? rooms.map((room, index) => `
           <button type="button" data-export-index="${index}">
             <strong>${esc(room.name)}</strong>
@@ -1480,11 +1485,49 @@ class SmartphoneShell {
     `;
 
     content.querySelector(".phone-log-back").addEventListener("click", () => this.renderSettings(content));
+    content.querySelector(".phone-log-full")?.addEventListener("click", () => this.downloadFullLog());
     content.querySelectorAll("[data-export-index]").forEach((button) => {
       button.addEventListener("click", () => {
         this.downloadRoomLog(rooms[Number(button.dataset.exportIndex)]);
       });
     });
+  }
+
+  // GM 전용: 기본 채팅과 모든 버블톡 방을 시간순으로 합친 통합 로그.
+  // 사적 대화가 시나리오상 중요해졌을 때 전체 흐름 안의 제자리에 놓고 정리하기 위한 것.
+  static downloadFullLog() {
+    const stamp = (time) => typeof time === "number"
+      ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "short", timeStyle: "short" }).format(new Date(time))
+      : "";
+    const stripHTML = (html) => {
+      const div = document.createElement("div");
+      div.innerHTML = html ?? "";
+      return div.textContent.trim();
+    };
+
+    const roomNames = new Map();
+    const sorted = Array.from(game.messages).sort((a, b) => a.timestamp - b.timestamp);
+    const lines = sorted.map((message) => {
+      const flag = message.flags?.[MODULE_ID];
+      let label = "채팅";
+      if (flag?.app === "bubbletalk" && flag.roomId) {
+        if (flag.group?.name) roomNames.set(flag.roomId, `단체 - ${flag.group.name}`);
+        else if (!roomNames.has(flag.roomId)) {
+          roomNames.set(flag.roomId, this.exportRoomName(flag.roomId, flag));
+        }
+        label = roomNames.get(flag.roomId);
+      }
+      const name = message.speaker?.alias || message.author?.name || "?";
+      return `[${stamp(message.timestamp)}] [${label}] ${name}: ${stripHTML(message.content)}`;
+    });
+
+    const blob = new Blob([`# 통합 로그\n\n${lines.join("\n")}\n`], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mythphone-full-log.txt";
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   static downloadRoomLog(room) {
