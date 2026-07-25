@@ -10,7 +10,8 @@ const listeners = new Map();
 
 export const PhoneStore = {
   data: {
-    messages: []
+    messages: [],
+    emails: []
   },
   callScenes: new Map(),
   // 최근 통화 기록: { name, time(timestamp), result("수신"|"거절"|"부재중") }
@@ -34,12 +35,19 @@ export const PhoneStore = {
   },
 
   async loadMessageData() {
-    const response = await fetch(`modules/${MODULE_ID}/data/messages.json`);
-    if (!response.ok) {
-      throw new Error(`messages 데이터를 불러오지 못했습니다: ${response.status}`);
+    const appNames = ["messages", "emails"];
+    const responses = await Promise.all(
+      appNames.map((app) => fetch(`modules/${MODULE_ID}/data/${app}.json`))
+    );
+
+    for (const [index, response] of responses.entries()) {
+      const app = appNames[index];
+      if (!response.ok) {
+        throw new Error(`${app} 데이터를 불러오지 못했습니다: ${response.status}`);
+      }
+      const data = await response.json();
+      this.data[app] = app === "emails" ? data.emails ?? [] : data.conversations ?? [];
     }
-    const data = await response.json();
-    this.data.messages = data.conversations ?? [];
   },
 
   directRoomId(userA, userB) {
