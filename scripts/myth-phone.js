@@ -1426,6 +1426,8 @@ class SmartphoneShell {
     for (const message of game.messages) {
       const flag = message.flags?.[MODULE_ID];
       if (flag?.app !== "bubbletalk" || !flag.roomId) continue;
+      // 유저 간 개인톡은 GM 내보내기에서도 제외 — 참여자 본인 내보내기로만 공개 가능
+      if (flag.roomId.startsWith("direct:")) continue;
       if (!rooms.has(flag.roomId)) {
         rooms.set(flag.roomId, {
           id: flag.roomId,
@@ -1509,6 +1511,8 @@ class SmartphoneShell {
     const sorted = Array.from(game.messages).sort((a, b) => a.timestamp - b.timestamp);
     const lines = sorted.map((message) => {
       const flag = message.flags?.[MODULE_ID];
+      // 유저 간 개인톡은 통합 로그에서도 제외
+      if (flag?.roomId?.startsWith("direct:")) return null;
       let label = "채팅";
       if (flag?.app === "bubbletalk" && flag.roomId) {
         if (flag.group?.name) roomNames.set(flag.roomId, `단체 - ${flag.group.name}`);
@@ -1521,7 +1525,7 @@ class SmartphoneShell {
       return `[${stamp(message.timestamp)}] [${label}] ${name}: ${stripHTML(message.content)}`;
     });
 
-    const blob = new Blob([`# 통합 로그\n\n${lines.join("\n")}\n`], { type: "text/plain" });
+    const blob = new Blob([`# 통합 로그\n\n${lines.filter(Boolean).join("\n")}\n`], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
