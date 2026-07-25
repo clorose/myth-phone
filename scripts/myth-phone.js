@@ -644,27 +644,17 @@ class SmartphoneShell {
       : realList.filter((room) =>
           section === "groups" ? room.type === "group" : room.type !== "group")
           .sort((a, b) => (b.listTime ?? 0) - (a.listTime ?? 0));
-    const conversations = [
-      ...realRooms,
-      ...(section === "groups"
-        ? this.messageData.bubbletalk.filter((conversation) => conversation.type === "group")
-        : this.messageData.bubbletalk.filter((conversation) => conversation.type !== "group"))
-    ];
+    const conversations = realRooms;
     const isFriends = section === "friends";
     const realList = Array.from(PhoneStore.rooms.values());
     realList.forEach((room) => {
       room.unread = PhoneStore.unreadOf(room);
     });
-    const dummyUnread = (predicate) => this.messageData.bubbletalk
-      .filter(predicate)
-      .reduce((sum, conversation) => sum + (conversation.unread || 0), 0);
     const realUnread = (predicate) => realList
       .filter(predicate)
       .reduce((sum, room) => sum + room.unread, 0);
-    const directUnread = realUnread((room) => room.type !== "group")
-      + dummyUnread((conversation) => conversation.type !== "group");
-    const groupUnread = realUnread((room) => room.type === "group")
-      + dummyUnread((conversation) => conversation.type === "group");
+    const directUnread = realUnread((room) => room.type !== "group");
+    const groupUnread = realUnread((room) => room.type === "group");
 
     content.innerHTML = `
       <header class="phone-page-header bubbletalk-page-header">
@@ -952,20 +942,16 @@ class SmartphoneShell {
   }
 
   static renderBubbleTalkChat(content, conversationId) {
-    const conversation = /^(direct|npc|group):/.test(conversationId)
-      ? PhoneStore.roomFor(conversationId)
-      : this.messageData.bubbletalk.find((item) => item.id === conversationId);
+    const conversation = PhoneStore.roomFor(conversationId);
     if (!conversation) {
       this.renderBubbleTalk(content, "chats");
       return;
     }
 
-    this.openBubbleRoomId = conversation.real ? conversation.id : null;
-    if (conversation.real) PhoneStore.markRead(conversation.id);
+    this.openBubbleRoomId = conversation.id;
+    PhoneStore.markRead(conversation.id);
     const isGroup = conversation.type === "group";
-    const viewMessages = conversation.real
-      ? conversation.messages.map((entry) => this.bubbleTalkEntryView(entry, conversation))
-      : conversation.messages;
+    const viewMessages = conversation.messages.map((entry) => this.bubbleTalkEntryView(entry, conversation));
     content.closest(".smartphone-app-view")?.classList.add("is-chat-open");
     content.innerHTML = `
       <header class="bubbletalk-chat-header">
@@ -1003,7 +989,7 @@ class SmartphoneShell {
       const image = event.target.closest(".bubbletalk-image");
       if (image) this.openImagePopout(image.getAttribute("src"));
     });
-    if (conversation.real && game.user.can("FILES_BROWSE")) {
+    if (game.user.can("FILES_BROWSE")) {
       content.querySelector('.bubbletalk-composer [aria-label="첨부"]').addEventListener("click", () => {
         const PickerClass = foundry.applications?.apps?.FilePicker?.implementation ?? FilePicker;
         new PickerClass({
@@ -1021,22 +1007,9 @@ class SmartphoneShell {
       const input = event.currentTarget.elements.message;
       const text = input.value.trim();
       if (!text) return;
-      if (conversation.real) {
-        // 실채팅: DOM에 직접 넣지 않고 ChatMessage 생성 → createChatMessage 훅 경유 단일 경로
-        this.sendBubbleMessage(conversation, text);
-        input.value = "";
-        return;
-      }
-      const message = { direction: "sent", text, time: Date.now() };
-      conversation.messages.push(message);
-      conversation.preview = text;
-      conversation.listTime = Date.now();
-      content.querySelector(".bubbletalk-chat-log").insertAdjacentHTML(
-        "beforeend",
-        this.bubbleTalkMessage(message, conversation)
-      );
+      // 실채팅: DOM에 직접 넣지 않고 ChatMessage 생성 → createChatMessage 훅 경유 단일 경로
+      this.sendBubbleMessage(conversation, text);
       input.value = "";
-      content.querySelector(".bubbletalk-chat-log").lastElementChild?.scrollIntoView({ behavior: "smooth" });
     });
   }
 
