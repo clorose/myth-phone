@@ -2108,3 +2108,26 @@
 .phone-log-option input {
   margin: 0;
 }
+
+/* 말풍선 이미지 첨부 */
+.bubbletalk-message p.has-image,
+.phone-chat-log p.has-image {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 5px;
+}
+
+.bubbletalk-message p.has-image span,
+.phone-chat-log p.has-image span {
+  padding: 0 5px 3px;
+}
+
+.bubbletalk-image {
+  display: block;
+  max-width: 170px;
+  max-height: 220px;
+  border-radius: 11px;
+  object-fit: cover;
+  cursor: pointer;
+}

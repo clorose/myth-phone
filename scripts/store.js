@@ -161,10 +161,11 @@ export const PhoneStore = {
       // NPC 명의 메시지는 speaker.alias(Actor 이름)를 표시 이름으로 쓴다
       authorName: message.speaker?.alias || message.author?.name || "알 수 없음",
       text: message.content,
+      image: flag.image ?? null,
       time: message.timestamp
     };
     room.messages.push(entry);
-    room.preview = entry.text;
+    room.preview = entry.text || (entry.image ? "사진" : "");
     room.listTime = entry.time;
     if (!silent) this.emit("bubbletalk-message", { room, entry });
   },

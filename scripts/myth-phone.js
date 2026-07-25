@@ -998,6 +998,23 @@ class SmartphoneShell {
     content.querySelector(".bubbletalk-inline-back").addEventListener("click", () => {
       this.renderBubbleTalk(content, isGroup ? "groups" : "chats");
     });
+    content.querySelector(".bubbletalk-chat-log").addEventListener("click", (event) => {
+      const image = event.target.closest(".bubbletalk-image");
+      if (image) this.openImagePopout(image.getAttribute("src"));
+    });
+    if (conversation.real && game.user.can("FILES_BROWSE")) {
+      content.querySelector('.bubbletalk-composer [aria-label="첨부"]').addEventListener("click", () => {
+        const PickerClass = foundry.applications?.apps?.FilePicker?.implementation ?? FilePicker;
+        new PickerClass({
+          type: "image",
+          callback: (path) => {
+            const input = content.querySelector('.bubbletalk-composer [name="message"]');
+            this.sendBubbleMessage(conversation, input?.value.trim() ?? "", path);
+            if (input) input.value = "";
+          }
+        }).render(true);
+      });
+    }
     content.querySelector(".bubbletalk-composer").addEventListener("submit", (event) => {
       event.preventDefault();
       const input = event.currentTarget.elements.message;
@@ -1005,35 +1022,7 @@ class SmartphoneShell {
       if (!text) return;
       if (conversation.real) {
         // 실채팅: DOM에 직접 넣지 않고 ChatMessage 생성 → createChatMessage 훅 경유 단일 경로
-        const isNpcRoom = conversation.id.startsWith("npc:");
-        const messageData = {
-          content: text,
-          // 기본 화자는 배정된 캐릭터 — 말풍선·로그에 캐릭터 이름이 뜬다
-          speaker: ChatMessage.getSpeaker(),
-          flags: { [MODULE_ID]: { app: "bubbletalk", roomId: conversation.id } }
-        };
-
-        if (conversation.type === "group") {
-          // 단체톡: 참여자 전원 귓속말 + 방 메타를 플래그에 실어 복원 가능하게
-          messageData.whisper = conversation.participantUserIds
-            .filter((id) => id !== game.user.id);
-          messageData.flags[MODULE_ID].group = {
-            name: conversation.name,
-            participantUserIds: conversation.participantUserIds
-          };
-        } else if (isNpcRoom && game.user.isGM) {
-          // GM → 플레이어: 선택한 NPC Actor를 화자로
-          const actor = game.actors.get(conversation.npcActorId);
-          messageData.whisper = [conversation.targetUserId];
-          messageData.speaker = { alias: actor?.name ?? "캐릭터", actor: actor?.id ?? null };
-        } else if (isNpcRoom) {
-          // 플레이어 답장 → GM 전원에게 귓속말, 같은 방으로
-          messageData.whisper = game.users.filter((user) => user.isGM).map((user) => user.id);
-        } else {
-          messageData.whisper = [conversation.otherUserId];
-        }
-
-        ChatMessage.create(messageData);
+        this.sendBubbleMessage(conversation, text);
         input.value = "";
         return;
       }
@@ -1059,7 +1048,12 @@ class SmartphoneShell {
       ? message.text.slice(message.text.indexOf(":") + 1).trim()
       : message.text;
     const contClass = first ? "" : " is-cont";
-    const bubbleClass = first ? ' class="is-first"' : "";
+    const bubbleClasses = [first ? "is-first" : "", message.image ? "has-image" : ""]
+      .filter(Boolean).join(" ");
+    const bubbleClass = bubbleClasses ? ` class="${bubbleClasses}"` : "";
+    const bubbleBody = `${
+      message.image ? `<img class="bubbletalk-image" src="${esc(message.image)}" alt="첨부 이미지">` : ""
+    }${displayText ? `<span>${esc(displayText)}</span>` : ""}`;
     const readCount = message.readCount ?? (message.read === false ? 1 : 0);
     const meta = last
       ? `<span class="bubbletalk-message-meta">${
@@ -1071,7 +1065,7 @@ class SmartphoneShell {
       return `
         <div class="bubbletalk-message is-sent${contClass}">
           ${meta}
-          <p${bubbleClass}>${esc(displayText)}</p>
+          <p${bubbleClass}>${bubbleBody}</p>
         </div>
       `;
     }
@@ -1081,11 +1075,54 @@ class SmartphoneShell {
         <span class="bubbletalk-message-avatar${first ? "" : " is-ghost"}">${first ? esc(senderName.charAt(0)) : ""}</span>
         <div>
           ${first ? `<strong>${esc(senderName)}</strong>` : ""}
-          <p${bubbleClass}>${esc(displayText)}</p>
+          <p${bubbleClass}>${bubbleBody}</p>
         </div>
         ${meta}
       </div>
     `;
+  }
+
+  static sendBubbleMessage(conversation, text, image = null) {
+    const isNpcRoom = conversation.id.startsWith("npc:");
+    const messageData = {
+      content: text,
+      // 기본 화자는 배정된 캐릭터 — 말풍선·로그에 캐릭터 이름이 뜬다
+      speaker: ChatMessage.getSpeaker(),
+      flags: { [MODULE_ID]: { app: "bubbletalk", roomId: conversation.id } }
+    };
+    if (image) messageData.flags[MODULE_ID].image = image;
+
+    if (conversation.type === "group") {
+      // 단체톡: 참여자 전원 귓속말 + 방 메타를 플래그에 실어 복원 가능하게
+      messageData.whisper = conversation.participantUserIds
+        .filter((id) => id !== game.user.id);
+      messageData.flags[MODULE_ID].group = {
+        name: conversation.name,
+        participantUserIds: conversation.participantUserIds
+      };
+    } else if (isNpcRoom && game.user.isGM) {
+      // GM → 플레이어: 선택한 캐릭터 Actor를 화자로
+      const actor = game.actors.get(conversation.npcActorId);
+      messageData.whisper = [conversation.targetUserId];
+      messageData.speaker = { alias: actor?.name ?? "캐릭터", actor: actor?.id ?? null };
+    } else if (isNpcRoom) {
+      // 플레이어 답장 → GM 전원에게 귓속말, 같은 방으로
+      messageData.whisper = game.users.filter((user) => user.isGM).map((user) => user.id);
+    } else {
+      messageData.whisper = [conversation.otherUserId];
+    }
+
+    ChatMessage.create(messageData);
+  }
+
+  static openImagePopout(src) {
+    try {
+      const PopoutClass = foundry.applications?.apps?.ImagePopout ?? ImagePopout;
+      new PopoutClass({ src, window: { title: "이미지" } }).render(true);
+    } catch (error) {
+      console.warn(`${MODULE_ID} | 이미지 팝업을 열 수 없어 새 창으로 대체합니다.`, error);
+      window.open(src, "_blank");
+    }
   }
 
   static bubbleTalkEntryView(entry, room) {
@@ -1093,6 +1130,7 @@ class SmartphoneShell {
       direction: entry.authorId === game.user.id ? "sent" : "received",
       sender: entry.authorName,
       text: entry.text,
+      image: entry.image ?? null,
       time: entry.time
     };
     if (room && view.direction === "sent") {
@@ -1419,7 +1457,8 @@ class SmartphoneShell {
         messages: room.messages.map((entry) => ({
           time: entry.time,
           name: entry.authorName,
-          text: entry.text
+          text: entry.text,
+          image: entry.image
         }))
       }));
     }
@@ -1442,7 +1481,8 @@ class SmartphoneShell {
       room.messages.push({
         time: message.timestamp,
         name: message.speaker?.alias || message.author?.name || "?",
-        text: message.content
+        text: message.content,
+        image: flag.image ?? null
       });
     }
     return Array.from(rooms.values());
@@ -1538,9 +1578,10 @@ class SmartphoneShell {
       const isPhone = flag?.app === "bubbletalk" && flag.roomId;
       const color = isPhone ? roomInfo(flag).color : null;
       const name = message.speaker?.alias || message.author?.name || "?";
+      const imageNote = flag?.image ? ` <em>[사진: ${esc(flag.image)}]</em>` : "";
       return `<p class="line"${color ? ` style="background:${color}"` : ""}>`
         + `<time>${stamp(message.timestamp)}</time>`
-        + `<b>${esc(name)}</b>${esc(stripHTML(message.content))}</p>`;
+        + `<b>${esc(name)}</b>${esc(stripHTML(message.content))}${imageNote}</p>`;
     }).filter(Boolean);
 
     const legend = rooms.size
@@ -1582,7 +1623,7 @@ ${lines.join("\n")}
     const stamp = (time) => typeof time === "number"
       ? new Intl.DateTimeFormat("ko-KR", { dateStyle: "short", timeStyle: "short" }).format(new Date(time))
       : "";
-    const lines = room.messages.map((entry) => `[${stamp(entry.time)}] ${entry.name}: ${entry.text}`);
+    const lines = room.messages.map((entry) => `[${stamp(entry.time)}] ${entry.name}: ${entry.text ?? ""}${entry.image ? ` [사진: ${entry.image}]` : ""}`);
     const blob = new Blob([`# ${room.name}\n\n${lines.join("\n")}\n`], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
