@@ -2,6 +2,8 @@
 // 렌더러는 여기서 데이터를 읽고, 데이터 변경은 emit으로 구독자에게 알린다.
 // (버블톡 실채팅 전환 시 ChatMessage 훅이 이 스토어를 갱신하는 구조를 전제)
 
+import { userDisplayName } from "./utils.js";
+
 const MODULE_ID = "myth-phone";
 
 const listeners = new Map();
@@ -95,7 +97,7 @@ export const PhoneStore = {
         real: true,
         npcActorId: actorId,
         targetUserId: userId,
-        name: game.user.isGM ? `${actorName} → ${user?.name ?? "?"}` : actorName,
+        name: game.user.isGM ? `${actorName} → ${userDisplayName(user)}` : actorName,
         initial: Array.from(actorName)[0].toLocaleUpperCase(),
         online: true,
         status: game.user.isGM ? "NPC 명의 대화" : "접속 중",
@@ -105,13 +107,14 @@ export const PhoneStore = {
       const ids = roomId.split(":").slice(1);
       const otherId = ids.find((id) => id !== game.user.id) ?? ids[0];
       const other = game.users.get(otherId);
+      const otherName = userDisplayName(other);
       room = {
         id: roomId,
         type: "direct",
         real: true,
         otherUserId: otherId,
-        name: other?.name ?? "알 수 없음",
-        initial: Array.from(other?.name ?? "?")[0].toLocaleUpperCase(),
+        name: otherName,
+        initial: Array.from(otherName)[0].toLocaleUpperCase(),
         online: other?.active ?? false,
         status: other?.active ? "접속 중" : "오프라인",
         messages: []
@@ -129,7 +132,7 @@ export const PhoneStore = {
     room.status = `멤버 ${room.participantCount}명`;
     // 목록 모자이크 아바타용
     room.participants = room.participantUserIds.slice(0, 4).map((id, index) => ({
-      initial: Array.from(game.users.get(id)?.name ?? "?")[0],
+      initial: Array.from(userDisplayName(game.users.get(id)))[0],
       color: this.groupPalette[index % this.groupPalette.length]
     }));
   },

@@ -41,3 +41,8 @@ export function debug(...args) {
   console.log("myth-phone |", ...args);
   ui.notifications?.info(`MythPhone 디버그 | ${args.map(String).join(" ")}`);
 }
+
+// 폰에서 유저를 지칭할 때는 배정된 캐릭터 이름을 쓰고, 없으면 계정 이름으로 폴백.
+export function userDisplayName(user) {
+  return user?.character?.name ?? user?.name ?? "알 수 없음";
+}

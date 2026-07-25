@@ -1,4 +1,4 @@
-import { escapeHTML as esc, formatTime, formatDuration, debug } from "./utils.js";
+import { escapeHTML as esc, formatTime, formatDuration, debug, userDisplayName } from "./utils.js";
 import { PhoneStore } from "./store.js";
 import { PhoneSocket } from "./socket.js";
 
@@ -177,7 +177,7 @@ class SmartphoneShell {
       </header>
       ${game.user.isGM ? `
       <button class="phone-outgoing-call" type="button">
-        <i class="fa-solid fa-headset"></i> NPC 전화 발신
+        <i class="fa-solid fa-headset"></i> 캐릭터로 전화 걸기
       </button>` : ""}
       <div class="phone-recent-list">
         ${PhoneStore.callLog.map((entry) => this.callHistoryItem(
@@ -301,17 +301,17 @@ class SmartphoneShell {
 
     content.innerHTML = `
       <header class="phone-page-header phone-dialer-header">
-        <p>전화</p><h2>NPC 발신</h2>
+        <p>전화</p><h2>캐릭터로 걸기</h2>
       </header>
       <form class="phone-outgoing-form">
-        <label>발신 NPC
+        <label>발신 캐릭터
           <select name="actorId">
             ${actors.map((actor) => `<option value="${actor.id}">${esc(actor.name)}</option>`).join("")}
           </select>
         </label>
         <label>대상 플레이어
           <select name="userId">
-            ${players.map((user) => `<option value="${user.id}">${esc(user.name)}</option>`).join("")}
+            ${players.map((user) => `<option value="${user.id}">${esc(userDisplayName(user))}</option>`).join("")}
           </select>
         </label>
         <label>전화 장면
@@ -674,7 +674,7 @@ class SmartphoneShell {
         <button class="bubbletalk-group-create" type="button" aria-label="단체 대화 만들기">
           <i class="fa-solid fa-users-medical"></i>
         </button>` : game.user.isGM ? `
-        <button class="bubbletalk-npc-chat" type="button" aria-label="NPC 명의 대화">
+        <button class="bubbletalk-npc-chat" type="button" aria-label="캐릭터 명의 대화">
           <i class="fa-solid fa-masks-theater"></i>
         </button>` : `
         <button type="button" aria-label="${isFriends ? "친구 추가" : "새 대화"}">
@@ -753,7 +753,7 @@ class SmartphoneShell {
           ${users.map((user) => `
             <label class="bubbletalk-group-member">
               <input type="checkbox" name="member" value="${user.id}">
-              <span>${esc(user.name)}${user.active ? "" : " (오프라인)"}</span>
+              <span>${esc(userDisplayName(user))}${user.active ? "" : " (오프라인)"}</span>
             </label>`).join("")}
         </div>
         <div class="phone-outgoing-actions">
@@ -780,7 +780,7 @@ class SmartphoneShell {
       const roomId = `group:${foundry.utils.randomID()}`;
       const participantUserIds = [game.user.id, ...memberIds];
       await ChatMessage.create({
-        content: `${game.user.name} 님이 대화를 시작했습니다.`,
+        content: `${userDisplayName(game.user)} 님이 대화를 시작했습니다.`,
         whisper: memberIds,
         flags: {
           [MODULE_ID]: {
@@ -801,20 +801,20 @@ class SmartphoneShell {
     content.innerHTML = `
       <header class="phone-page-header bubbletalk-page-header">
         <p>BubbleTalk</p>
-        <h2>NPC 명의 대화</h2>
+        <h2>캐릭터 명의 대화</h2>
         <button type="button" aria-label="닫기" class="bubbletalk-npc-cancel">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </header>
       <form class="phone-outgoing-form bubbletalk-npc-form">
-        <label>발신 NPC
+        <label>발신 캐릭터
           <select name="actorId">
             ${actors.map((actor) => `<option value="${actor.id}">${esc(actor.name)}</option>`).join("")}
           </select>
         </label>
         <label>대상 플레이어
           <select name="userId">
-            ${players.map((user) => `<option value="${user.id}">${esc(user.name)}${user.active ? "" : " (오프라인)"}</option>`).join("")}
+            ${players.map((user) => `<option value="${user.id}">${esc(userDisplayName(user))}${user.active ? "" : " (오프라인)"}</option>`).join("")}
           </select>
         </label>
         <div class="phone-outgoing-actions">
@@ -849,11 +849,11 @@ class SmartphoneShell {
 
     return users.map((user) => `
       <button class="bubbletalk-friend" type="button"
-        data-name="${esc(user.name)}"
+        data-name="${esc(userDisplayName(user))}"
         data-conversation-id="${PhoneStore.directRoomId(game.user.id, user.id)}">
-        <span class="phone-avatar">${esc(Array.from(user.name)[0].toLocaleUpperCase())}</span>
+        <span class="phone-avatar">${esc(Array.from(userDisplayName(user))[0].toLocaleUpperCase())}</span>
         <span class="bubbletalk-friend-copy">
-          <strong>${esc(user.name)}</strong>
+          <strong>${esc(userDisplayName(user))}</strong>
           <small>${user.isGM ? "GM" : user.active ? "접속 중" : "오프라인"}</small>
         </span>
         <i class="fa-solid fa-circle ${user.active ? "is-online" : ""}" aria-label="${user.active ? "접속 중" : "오프라인"}"></i>
@@ -1008,6 +1008,8 @@ class SmartphoneShell {
         const isNpcRoom = conversation.id.startsWith("npc:");
         const messageData = {
           content: text,
+          // 기본 화자는 배정된 캐릭터 — 말풍선·로그에 캐릭터 이름이 뜬다
+          speaker: ChatMessage.getSpeaker(),
           flags: { [MODULE_ID]: { app: "bubbletalk", roomId: conversation.id } }
         };
 
@@ -1023,7 +1025,7 @@ class SmartphoneShell {
           // GM → 플레이어: 선택한 NPC Actor를 화자로
           const actor = game.actors.get(conversation.npcActorId);
           messageData.whisper = [conversation.targetUserId];
-          messageData.speaker = { alias: actor?.name ?? "NPC", actor: actor?.id ?? null };
+          messageData.speaker = { alias: actor?.name ?? "캐릭터", actor: actor?.id ?? null };
         } else if (isNpcRoom) {
           // 플레이어 답장 → GM 전원에게 귓속말, 같은 방으로
           messageData.whisper = game.users.filter((user) => user.isGM).map((user) => user.id);
@@ -1256,7 +1258,7 @@ class SmartphoneShell {
       <header class="phone-page-header">
         <p>연락처</p><h2>연락처</h2>
         ${game.user.isGM ? `
-        <button class="phone-contact-add" type="button" aria-label="NPC 연락처 추가">
+        <button class="phone-contact-add" type="button" aria-label="캐릭터 연락처 추가">
           <i class="fa-solid fa-user-plus"></i>
         </button>` : ""}
       </header>
@@ -1266,9 +1268,9 @@ class SmartphoneShell {
       </label>
       <div class="phone-contact-list">
         ${users.map((user) => `
-          <article class="phone-contact" data-name="${esc(user.name)}">
-            <span class="phone-avatar">${esc(Array.from(user.name)[0].toLocaleUpperCase())}</span>
-            <span><strong>${esc(user.name)}</strong><small>${user.isGM ? "GM" : user.active ? "접속 중" : "오프라인"}</small></span>
+          <article class="phone-contact" data-name="${esc(userDisplayName(user))}">
+            <span class="phone-avatar">${esc(Array.from(userDisplayName(user))[0].toLocaleUpperCase())}</span>
+            <span><strong>${esc(userDisplayName(user))}</strong><small>${user.isGM ? "GM" : user.active ? "접속 중" : "오프라인"}</small></span>
             <button type="button" data-chat-room="${PhoneStore.directRoomId(game.user.id, user.id)}"
               aria-label="${esc(user.name)}에게 메시지"><i class="fa-solid fa-comment"></i></button>
           </article>`).join("")}
@@ -1321,13 +1323,13 @@ class SmartphoneShell {
 
     content.innerHTML = `
       <header class="phone-page-header">
-        <p>연락처</p><h2>${editing ? "연락처 수정" : "NPC 연락처 추가"}</h2>
+        <p>연락처</p><h2>${editing ? "연락처 수정" : "캐릭터 연락처 추가"}</h2>
         <button class="phone-contact-cancel" type="button" aria-label="닫기">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </header>
       <form class="phone-outgoing-form phone-contact-form">
-        <label>NPC Actor
+        <label>캐릭터
           ${editing
             ? `<input type="text" value="${esc(editing.name)}" disabled>`
             : `<select name="actorId">
@@ -1358,7 +1360,7 @@ class SmartphoneShell {
       const fields = event.currentTarget.elements;
       const actor = editing ?? game.actors.get(fields.actorId?.value);
       if (!actor) {
-        ui.notifications.warn("등록할 NPC Actor가 없습니다.");
+        ui.notifications.warn("등록할 캐릭터가 없습니다.");
         return;
       }
       await actor.setFlag(MODULE_ID, "contact", { number: fields.number.value.trim() });
@@ -1451,11 +1453,11 @@ class SmartphoneShell {
     const [kind, first, second] = roomId.split(":");
     if (kind === "npc") {
       const actor = game.actors.get(first)?.name ?? "?";
-      const user = game.users.get(second)?.name ?? "?";
+      const user = userDisplayName(game.users.get(second));
       return `${actor} ↔ ${user}`;
     }
-    const userA = game.users.get(first)?.name ?? "?";
-    const userB = game.users.get(second)?.name ?? "?";
+    const userA = userDisplayName(game.users.get(first));
+    const userB = userDisplayName(game.users.get(second));
     return `${userA} ↔ ${userB}`;
   }
 
