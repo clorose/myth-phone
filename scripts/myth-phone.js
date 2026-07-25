@@ -1,7 +1,12 @@
+import { escapeHTML as esc, formatTime, formatDuration } from "./utils.js";
+import { PhoneStore } from "./store.js";
+import { PhoneSocket } from "./socket.js";
+
 const MODULE_ID = "myth-phone";
 
 class SmartphoneShell {
   static phone;
+  static wrapper;
   static clockTimer;
   static callTimer;
   static callSceneTimers = [];
@@ -9,12 +14,15 @@ class SmartphoneShell {
   static ringtoneTimer;
   static ringtoneGeneration = 0;
   static audioContext;
-  static callScenes = new Map();
-  static messageData = {
-    messages: [],
-    bubbletalk: [],
-    bubbletalkFriends: []
-  };
+
+  // 데이터는 PhoneStore가 원본. 기존 렌더러 호환용 접근자.
+  static get callScenes() {
+    return PhoneStore.callScenes;
+  }
+
+  static get messageData() {
+    return PhoneStore.data;
+  }
 
   static mount() {
     if (document.querySelector("#fvtt-smartphone")) return;
@@ -100,48 +108,11 @@ class SmartphoneShell {
     `;
 
     document.body.append(wrapper);
+    this.wrapper = wrapper;
     this.phone = wrapper.querySelector(".smartphone-device");
     this.bindEvents(wrapper);
     this.updateClock(wrapper);
     this.clockTimer = window.setInterval(() => this.updateClock(wrapper), 30_000);
-  }
-
-  static async loadCallScenes() {
-    const response = await fetch(`modules/${MODULE_ID}/data/call-scenes.json`);
-    if (!response.ok) {
-      throw new Error(`전화 장면 데이터를 불러오지 못했습니다: ${response.status}`);
-    }
-
-    const data = await response.json();
-    this.callScenes = new Map(
-      (data.scenes ?? []).map((scene) => [scene.id, scene])
-    );
-  }
-
-  static async loadMessageData() {
-    const appNames = ["messages", "bubbletalk"];
-    const responses = await Promise.all(
-      appNames.map((app) => fetch(`modules/${MODULE_ID}/data/${app}.json`))
-    );
-
-    for (const [index, response] of responses.entries()) {
-      const app = appNames[index];
-      if (!response.ok) {
-        throw new Error(`${app} 데이터를 불러오지 못했습니다: ${response.status}`);
-      }
-      const data = await response.json();
-      this.messageData[app] = data.conversations ?? [];
-      if (app === "bubbletalk") {
-        this.messageData.bubbletalkFriends = data.friends ?? [];
-      }
-    }
-  }
-
-  static async loadData() {
-    await Promise.all([
-      this.loadCallScenes(),
-      this.loadMessageData()
-    ]);
   }
 
   static bindEvents(wrapper) {
@@ -203,7 +174,19 @@ class SmartphoneShell {
           <i class="fa-solid fa-phone-volume"></i>
         </button>
       </header>
+      ${game.user.isGM ? `
+      <button class="phone-outgoing-call" type="button">
+        <i class="fa-solid fa-headset"></i> NPC 전화 발신
+      </button>` : ""}
       <div class="phone-recent-list">
+        ${PhoneStore.callLog.map((entry) => this.callHistoryItem(
+          esc(entry.name),
+          esc(entry.number ?? "MythPhone"),
+          `${entry.result} 통화`,
+          formatTime(entry.time),
+          esc(entry.initial),
+          entry.result !== "수신"
+        )).join("")}
         ${this.callHistoryItem("의문의 남자", "발신번호 표시제한", "부재중", "오후 10:31", "?", true)}
         ${this.callHistoryItem("지아", "010-1234-5678", "수신 통화", "오후 8:12", "J")}
         ${this.callHistoryItem("정비소", "02-555-0182", "발신 통화", "어제", "修")}
@@ -226,6 +209,9 @@ class SmartphoneShell {
 
     content.querySelector(".phone-test-call").addEventListener("click", () => {
       this.renderIncomingCall(content, "hacker-ambush");
+    });
+    content.querySelector(".phone-outgoing-call")?.addEventListener("click", () => {
+      this.renderOutgoingCallForm(content);
     });
     content.querySelector('[data-phone-tab="keypad"]').addEventListener("click", () => this.renderPhoneKeypad(content));
     content.querySelector('[data-phone-tab="contacts"]').addEventListener("click", () => this.renderContacts(content));
@@ -303,21 +289,115 @@ class SmartphoneShell {
     content.querySelector('[data-phone-tab="contacts"]').addEventListener("click", () => this.renderContacts(content));
   }
 
-  static renderIncomingCall(content, sceneId) {
+  static renderOutgoingCallForm(content) {
+    const actors = game.actors.contents;
+    const players = game.users.filter((user) => user.active && !user.isGM);
+    const scenes = Array.from(this.callScenes.values());
+
+    content.innerHTML = `
+      <header class="phone-page-header phone-dialer-header">
+        <p>전화</p><h2>NPC 발신</h2>
+      </header>
+      <form class="phone-outgoing-form">
+        <label>발신 NPC
+          <select name="actorId">
+            ${actors.map((actor) => `<option value="${actor.id}">${esc(actor.name)}</option>`).join("")}
+          </select>
+        </label>
+        <label>대상 플레이어
+          <select name="userId">
+            ${players.map((user) => `<option value="${user.id}">${esc(user.name)}</option>`).join("")}
+          </select>
+        </label>
+        <label>전화 장면
+          <select name="sceneId">
+            ${scenes.map((scene) => `<option value="${scene.id}">${esc(scene.name ?? scene.id)}</option>`).join("")}
+          </select>
+        </label>
+        <div class="phone-outgoing-actions">
+          <button class="is-cancel" type="button">취소</button>
+          <button class="is-send" type="submit"><i class="fa-solid fa-phone"></i> 발신</button>
+        </div>
+      </form>
+    `;
+
+    content.querySelector(".is-cancel").addEventListener("click", () => this.renderPhone(content));
+    content.querySelector(".phone-outgoing-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const fields = event.currentTarget.elements;
+      if (!fields.userId.value) {
+        ui.notifications.warn("접속 중인 대상 플레이어가 없습니다.");
+        return;
+      }
+
+      const actor = game.actors.get(fields.actorId.value);
+      const caller = {
+        name: actor?.name ?? "알 수 없음",
+        initial: Array.from(actor?.name ?? "?")[0].toLocaleUpperCase(),
+        number: "발신번호 표시제한"
+      };
+      PhoneSocket.send("incoming-call", {
+        callId: foundry.utils.randomID(),
+        targetUserId: fields.userId.value,
+        sceneId: fields.sceneId.value,
+        caller
+      });
+      ui.notifications.info(
+        `MythPhone | ${caller.name} → ${game.users.get(fields.userId.value)?.name} 발신`
+      );
+      this.renderPhone(content);
+    });
+  }
+
+  static receiveIncomingCall(payload) {
+    if (payload.targetUserId !== game.user.id) return;
+    if (!this.wrapper) return;
+
+    this.phone.classList.add("is-open");
+    this.phone.setAttribute("aria-hidden", "false");
+    this.openApp(this.wrapper, "phone");
+    this.renderIncomingCall(
+      this.wrapper.querySelector(".smartphone-app-content"),
+      payload.sceneId,
+      payload
+    );
+  }
+
+  static logCall(caller, result) {
+    PhoneStore.callLog.unshift({
+      name: caller.name,
+      initial: caller.initial ?? Array.from(caller.name ?? "?")[0],
+      number: caller.number,
+      time: Date.now(),
+      result
+    });
+  }
+
+  static reportCallResult(payload, caller, result) {
+    if (!payload?.callId) return;
+    PhoneSocket.send("call-result", {
+      callId: payload.callId,
+      targetName: game.user.name,
+      callerName: caller.name,
+      result
+    });
+  }
+
+  static renderIncomingCall(content, sceneId, payload = null) {
     const scene = this.callScenes.get(sceneId);
     if (!scene) {
       ui.notifications.error(`MythPhone 전화 장면을 찾을 수 없습니다: ${sceneId}`);
       return;
     }
 
-    const caller = scene.caller;
+    const caller = payload?.caller ?? scene.caller;
     content.closest(".smartphone-app-view")?.classList.add("is-call-screen");
     content.innerHTML = `
       <section class="phone-incoming-call">
         <p>수신 전화</p>
-        <span class="phone-call-avatar">${caller.initial}</span>
-        <h2>${caller.name}</h2>
-        <small>${caller.number}</small>
+        <span class="phone-call-avatar">${esc(caller.initial)}</span>
+        <h2>${esc(caller.name)}</h2>
+        <small>${esc(caller.number)}</small>
         <div class="phone-incoming-actions">
           <button class="is-reject" type="button">
             <i class="fa-solid fa-phone-slash"></i><span>거절</span>
@@ -332,24 +412,28 @@ class SmartphoneShell {
     this.startRingtone();
     content.querySelector(".is-reject").addEventListener("click", () => {
       this.stopRingtone();
+      this.logCall(caller, "거절");
+      this.reportCallResult(payload, caller, "거절");
       this.renderPhone(content);
     });
     content.querySelector(".is-accept").addEventListener("click", () => {
       this.stopRingtone();
-      this.renderActiveCall(content, scene);
+      this.logCall(caller, "수신");
+      this.reportCallResult(payload, caller, "수신");
+      this.renderActiveCall(content, scene, caller);
     });
   }
 
-  static renderActiveCall(content, scene) {
+  static renderActiveCall(content, scene, caller = scene.caller) {
     this.stopRingtone();
     this.stopCallTimer();
     this.callSeconds = 0;
     content.innerHTML = `
       <section class="phone-active-call">
         <header>
-          <span class="phone-call-avatar">${scene.caller.initial}</span>
+          <span class="phone-call-avatar">${esc(caller.initial)}</span>
           <div>
-            <h2>${scene.caller.name}</h2>
+            <h2>${esc(caller.name)}</h2>
             <time class="phone-call-duration">00:00</time>
           </div>
         </header>
@@ -368,22 +452,20 @@ class SmartphoneShell {
     const duration = content.querySelector(".phone-call-duration");
     this.callTimer = window.setInterval(() => {
       this.callSeconds += 1;
-      const minutes = String(Math.floor(this.callSeconds / 60)).padStart(2, "0");
-      const seconds = String(this.callSeconds % 60).padStart(2, "0");
-      duration.textContent = `${minutes}:${seconds}`;
+      duration.textContent = formatDuration(this.callSeconds);
     }, 1000);
 
     content.querySelector(".phone-hangup").addEventListener("click", () => this.renderPhone(content));
-    this.playCallScene(content, scene);
+    this.playCallScene(content, scene, caller);
   }
 
-  static playCallScene(content, scene) {
+  static playCallScene(content, scene, caller = scene.caller) {
     scene.beats.forEach((beat) => {
       const timer = window.setTimeout(() => {
         if (!content.querySelector(".phone-active-call")) return;
         if (beat.effect) this.playCallEffect(beat.effect);
         if (beat.type === "end") {
-          this.renderCallEnded(content, scene);
+          this.renderCallEnded(content, caller);
           return;
         }
 
@@ -401,16 +483,14 @@ class SmartphoneShell {
     });
   }
 
-  static renderCallEnded(content, scene) {
+  static renderCallEnded(content, caller) {
     const elapsed = this.callSeconds;
     this.stopCallTimer();
-    const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
-    const seconds = String(elapsed % 60).padStart(2, "0");
     content.innerHTML = `
       <section class="phone-call-ended">
         <i class="fa-solid fa-phone-slash"></i>
         <h2>통화가 종료되었습니다</h2>
-        <p>${scene.caller.name} · ${minutes}:${seconds}</p>
+        <p>${esc(caller.name)} · ${formatDuration(elapsed)}</p>
         <button type="button">최근 통화로 돌아가기</button>
       </section>
     `;
@@ -619,11 +699,11 @@ class SmartphoneShell {
 
     return this.messageData.bubbletalkFriends.map((friend) => `
       <button class="bubbletalk-friend" type="button"
-        data-name="${friend.name}" ${friend.conversationId ? `data-conversation-id="${friend.conversationId}"` : ""}>
+        data-name="${esc(friend.name)}" ${friend.conversationId ? `data-conversation-id="${friend.conversationId}"` : ""}>
         <span class="phone-avatar">${friend.initial}</span>
         <span class="bubbletalk-friend-copy">
-          <strong>${friend.name}</strong>
-          <small>${friend.status}</small>
+          <strong>${esc(friend.name)}</strong>
+          <small>${esc(friend.status)}</small>
         </span>
         <i class="fa-solid fa-circle ${friend.online ? "is-online" : ""}" aria-label="${friend.online ? "접속 중" : "오프라인"}"></i>
       </button>
@@ -645,27 +725,27 @@ class SmartphoneShell {
     const isGroup = conversation.type === "group";
     return `
       <button class="bubbletalk-conversation" type="button"
-        data-conversation-id="${conversation.id}" data-name="${conversation.name}">
+        data-conversation-id="${conversation.id}" data-name="${esc(conversation.name)}">
         ${isGroup && conversation.participants?.length
           ? `<span class="bubbletalk-room-avatar is-mosaic">${
               conversation.participants.slice(0, 4).map((member) =>
                 `<b style="background:${member.color}">${member.initial}</b>`).join("")
             }</span>`
           : `<span class="bubbletalk-room-avatar ${isGroup ? "is-group" : ""}">
-              <span>${conversation.initial}</span>
+              <span>${esc(conversation.initial)}</span>
               ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
               ${isGroup ? `<i class="fa-solid fa-user-group" aria-hidden="true"></i>` : ""}
             </span>`}
         <span class="bubbletalk-room-copy">
           <span class="bubbletalk-room-title">
-            <strong>${conversation.name}</strong>
+            <strong>${esc(conversation.name)}</strong>
             ${isGroup ? `<small>${conversation.participantCount ?? ""}</small>` : ""}
             ${conversation.muted ? '<i class="fa-solid fa-bell-slash bubbletalk-mute" aria-label="알림 꺼짐"></i>' : ""}
           </span>
-          <small>${conversation.preview}</small>
+          <small>${esc(conversation.preview)}</small>
         </span>
         <span class="bubbletalk-room-meta">
-          <time>${conversation.listTime}</time>
+          <time>${esc(formatTime(conversation.listTime))}</time>
           ${conversation.unread ? `<b class="${conversation.muted ? "is-quiet" : ""}">${conversation.unread}</b>` : ""}
         </span>
       </button>
@@ -705,14 +785,14 @@ class SmartphoneShell {
   static conversationItem(conversation) {
     return `
       <button class="phone-conversation" type="button"
-        data-conversation-id="${conversation.id}" data-name="${conversation.name}">
-        <span class="phone-avatar">${conversation.initial}</span>
+        data-conversation-id="${conversation.id}" data-name="${esc(conversation.name)}">
+        <span class="phone-avatar">${esc(conversation.initial)}</span>
         <span class="phone-conversation-copy">
-          <strong>${conversation.name}</strong>
-          <small>${conversation.preview}</small>
+          <strong>${esc(conversation.name)}</strong>
+          <small>${esc(conversation.preview)}</small>
         </span>
         <span class="phone-conversation-meta">
-          <time>${conversation.listTime}</time>
+          <time>${esc(formatTime(conversation.listTime))}</time>
           ${conversation.unread ? `<b>${conversation.unread}</b>` : ""}
         </span>
       </button>
@@ -736,11 +816,11 @@ class SmartphoneShell {
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <span class="bubbletalk-chat-avatar">
-          <span>${conversation.initial}</span>
+          <span>${esc(conversation.initial)}</span>
           ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
         </span>
         <div class="bubbletalk-chat-title">
-          <strong>${conversation.name}</strong>
+          <strong>${esc(conversation.name)}</strong>
           <small>${isGroup ? `${conversation.participantCount ?? ""}명 참여` : conversation.status}</small>
         </div>
         <button type="button" aria-label="통화"><i class="fa-solid fa-phone"></i></button>
@@ -748,7 +828,7 @@ class SmartphoneShell {
         <button type="button" aria-label="대화 메뉴"><i class="fa-solid fa-bars"></i></button>
       </header>
       <div class="bubbletalk-chat-log">
-        ${conversation.timelineTime ? `<time>${conversation.timelineTime}</time>` : ""}
+        ${conversation.timelineTime ? `<time>${esc(formatTime(conversation.timelineTime))}</time>` : ""}
         ${conversation.messages.map((message, index) => {
           const sameGroup = (a, b) => Boolean(a && b)
             && a.direction === b.direction && a.sender === b.sender;
@@ -774,10 +854,10 @@ class SmartphoneShell {
       const input = event.currentTarget.elements.message;
       const text = input.value.trim();
       if (!text) return;
-      const message = { direction: "sent", text, time: "방금" };
+      const message = { direction: "sent", text, time: Date.now() };
       conversation.messages.push(message);
       conversation.preview = text;
-      conversation.listTime = "방금";
+      conversation.listTime = Date.now();
       content.querySelector(".bubbletalk-chat-log").insertAdjacentHTML(
         "beforeend",
         this.bubbleTalkMessage(message, conversation)
@@ -800,24 +880,24 @@ class SmartphoneShell {
     const meta = last
       ? `<span class="bubbletalk-message-meta">${
           isSent && message.read === false ? '<b class="bubbletalk-read">1</b>' : ""
-        }<time>${message.time ?? ""}</time></span>`
+        }<time>${esc(formatTime(message.time))}</time></span>`
       : "";
 
     if (isSent) {
       return `
         <div class="bubbletalk-message is-sent${contClass}">
           ${meta}
-          <p${bubbleClass}>${displayText}</p>
+          <p${bubbleClass}>${esc(displayText)}</p>
         </div>
       `;
     }
 
     return `
       <div class="bubbletalk-message is-received${contClass}">
-        <span class="bubbletalk-message-avatar${first ? "" : " is-ghost"}">${first ? senderName.charAt(0) : ""}</span>
+        <span class="bubbletalk-message-avatar${first ? "" : " is-ghost"}">${first ? esc(senderName.charAt(0)) : ""}</span>
         <div>
-          ${first ? `<strong>${senderName}</strong>` : ""}
-          <p${bubbleClass}>${displayText}</p>
+          ${first ? `<strong>${esc(senderName)}</strong>` : ""}
+          <p${bubbleClass}>${esc(displayText)}</p>
         </div>
         ${meta}
       </div>
@@ -852,12 +932,12 @@ class SmartphoneShell {
         <button class="phone-inline-back" type="button" aria-label="대화 목록">
           <i class="fa-solid fa-chevron-left"></i>
         </button>
-        <span class="phone-avatar">${conversation.initial}</span>
-        <div><strong>${conversation.name}</strong><small>${conversation.status}</small></div>
+        <span class="phone-avatar">${esc(conversation.initial)}</span>
+        <div><strong>${esc(conversation.name)}</strong><small>${conversation.status}</small></div>
         <button type="button" aria-label="통화"><i class="fa-solid fa-phone"></i></button>
       </header>
       <div class="phone-chat-log">
-        ${conversation.timelineTime ? `<time>${conversation.timelineTime}</time>` : ""}
+        ${conversation.timelineTime ? `<time>${esc(formatTime(conversation.timelineTime))}</time>` : ""}
         ${conversation.messages.map((message) =>
           `<p class="is-${message.direction}">${message.text}</p>`
         ).join("")}
@@ -880,7 +960,7 @@ class SmartphoneShell {
       if (!message) return;
       conversation.messages.push({ direction: "sent", text: message });
       conversation.preview = message;
-      conversation.listTime = "방금";
+      conversation.listTime = Date.now();
       const bubble = document.createElement("p");
       bubble.className = "is-sent";
       bubble.textContent = message;
@@ -992,7 +1072,14 @@ class SmartphoneShell {
 }
 
 Hooks.once("ready", () => {
-  SmartphoneShell.loadData()
+  PhoneSocket.register();
+  PhoneSocket.on("incoming-call", (payload) => SmartphoneShell.receiveIncomingCall(payload));
+  PhoneSocket.on("call-result", (payload) => {
+    if (!game.user.isGM) return;
+    ui.notifications.info(`MythPhone | ${payload.targetName}: ${payload.callerName} 전화 ${payload.result}`);
+  });
+
+  PhoneStore.load()
     .then(() => {
       SmartphoneShell.mount();
       console.info(`${MODULE_ID} | MythPhone 인터페이스를 준비했습니다.`);
