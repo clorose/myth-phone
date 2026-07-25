@@ -2024,3 +2024,25 @@
   color: #fff;
   background: linear-gradient(150deg, #58df82, #1bab4c);
 }
+
+/* 홈 화면 앱 아이콘 안읽음 배지 */
+.smartphone-app-grid button {
+  position: relative;
+}
+
+.smartphone-app-badge {
+  position: absolute;
+  top: -6px;
+  right: 2px;
+  display: grid;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  place-items: center;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  color: #fff;
+  background: #ef5753;
+  font-size: 10px;
+  font-weight: 750;
+}

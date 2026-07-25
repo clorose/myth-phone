@@ -134,6 +134,57 @@ export const PhoneStore = {
     if (!silent) this.emit("bubbletalk-message", { room, entry });
   },
 
+  // ----- 읽음 상태: 사용자별 마지막 읽은 시각을 유저 플래그(월드 저장)에 보관 -----
+
+  lastReadMap(user = game.user) {
+    return user?.getFlag(MODULE_ID, "lastRead") ?? {};
+  },
+
+  unreadOf(room) {
+    const last = this.lastReadMap()[room.id] ?? 0;
+    return room.messages.filter(
+      (entry) => entry.time > last && entry.authorId !== game.user.id
+    ).length;
+  },
+
+  totalUnread() {
+    return Array.from(this.rooms.values())
+      .reduce((sum, room) => sum + this.unreadOf(room), 0);
+  },
+
+  async markRead(roomId) {
+    const map = { ...this.lastReadMap() };
+    map[roomId] = Date.now();
+    await game.user.setFlag(MODULE_ID, "lastRead", map);
+    this.emit("unread-changed");
+  },
+
+  // 이 방에서 나 말고 다른 참여자들의 마지막 읽은 시각 목록 (보낸 메시지 읽음 표시용)
+  otherLastRead(room) {
+    let ids = [];
+    if (room.id.startsWith("npc:")) {
+      ids = game.user.isGM
+        ? [room.targetUserId]
+        : game.users.filter((user) => user.isGM).map((user) => user.id);
+    } else if (room.otherUserId) {
+      ids = [room.otherUserId];
+    } else if (room.participantUserIds) {
+      ids = room.participantUserIds.filter((id) => id !== game.user.id);
+    }
+    return ids.map((id) => this.lastReadMap(game.users.get(id))[room.id] ?? 0);
+  },
+
+  // ----- 통화 기록: 유저 플래그에 영구 저장 -----
+
+  loadCallLog() {
+    this.callLog = game.user.getFlag(MODULE_ID, "callLog") ?? [];
+  },
+
+  async saveCallEntry(entry) {
+    this.callLog = [entry, ...this.callLog].slice(0, 50);
+    await game.user.setFlag(MODULE_ID, "callLog", this.callLog);
+  },
+
   on(event, handler) {
     if (!listeners.has(event)) listeners.set(event, new Set());
     listeners.get(event).add(handler);
