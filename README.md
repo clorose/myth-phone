@@ -58,7 +58,7 @@ WSL의 `ln -s`로 `/home/...`을 직접 가리키는 링크를 만들면 Windows
 버블톡은 전부 실제 채팅이다(더미 데이터 제거됨). 기본 메시지 앱만 연출용 JSON 데이터를 사용한다. 전화는 GM이 발신 화면(최근 통화 상단의 `NPC 전화 발신`)에서 NPC Actor·대상 플레이어·장면을 골라 걸면 대상 플레이어에게만 소켓으로 전달된다. 통화 기록은 아직 클라이언트 세션 메모리에만 남아 새로고침하면 사라진다.
 
 상세한 목표 동작과 기능 요구사항은 [`docs/FEATURES.md`](docs/FEATURES.md)를 참고한다.
-진행 기록과 남은 일은 [`docs/PROGRESS.md`](docs/PROGRESS.md), 테스트 항목은 [`docs/TESTING.md`](docs/TESTING.md), 프로젝트에서 쓰는 Foundry API 정리는 [`docs/fvtt.md`](docs/fvtt.md)에 있다.
+사용 방법과 연출 데이터 작성 형식은 [`docs/GUIDE.md`](docs/GUIDE.md), 진행 기록과 남은 일은 [`docs/PROGRESS.md`](docs/PROGRESS.md), 테스트 항목은 [`docs/TESTING.md`](docs/TESTING.md), 프로젝트에서 쓰는 Foundry API 정리는 [`docs/fvtt.md`](docs/fvtt.md), 확정된 버블톡 UI 목업은 [`docs/design/bubbletalk-mockup.html`](docs/design/bubbletalk-mockup.html)에 있다.
 
 ## 핫 리로드
 
