@@ -492,6 +492,7 @@
 .bubbletalk-friend:hover,
 .bubbletalk-friend:focus {
   border: 0;
+  outline: none;
   background: #eef2f4;
   box-shadow: none;
 }
@@ -546,6 +547,7 @@
 .bubbletalk-conversation:hover,
 .bubbletalk-conversation:focus {
   border: 0;
+  outline: none;
   background: #eef2f4;
   box-shadow: none;
 }
@@ -1306,6 +1308,11 @@
 }
 
 .smartphone-app-view.is-call-screen > .smartphone-back {
+  display: none;
+}
+
+/* 브라우저 페이지엔 자체 뒤로가기가 있어 전역 뒤로가기와 겹침 → 전역 숨김 */
+.smartphone-app-view:has(.phone-browser-header) > .smartphone-back {
   display: none;
 }
 
