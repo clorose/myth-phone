@@ -645,17 +645,17 @@ class SmartphoneShell {
       chats: "채팅",
       groups: "단체 대화"
     };
+    const isFriends = section === "friends";
+    const realList = Array.from(PhoneStore.rooms.values());
+    realList.forEach((room) => {
+      room.unread = PhoneStore.unreadOf(room);
+    });
     const realRooms = isFriends
       ? []
       : realList.filter((room) =>
           section === "groups" ? room.type === "group" : room.type !== "group")
           .sort((a, b) => (b.listTime ?? 0) - (a.listTime ?? 0));
     const conversations = realRooms;
-    const isFriends = section === "friends";
-    const realList = Array.from(PhoneStore.rooms.values());
-    realList.forEach((room) => {
-      room.unread = PhoneStore.unreadOf(room);
-    });
     const realUnread = (predicate) => realList
       .filter(predicate)
       .reduce((sum, room) => sum + room.unread, 0);
