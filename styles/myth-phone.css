@@ -438,7 +438,7 @@
   margin: 0;
   padding: 9px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: 14px;
   color: #17181e;
   background: transparent;
   box-shadow: none;
@@ -448,7 +448,7 @@
 .bubbletalk-friend:hover,
 .bubbletalk-friend:focus {
   border: 0;
-  background: rgba(var(--phone-accent-rgb), 0.07);
+  background: #eef2f4;
   box-shadow: none;
 }
 
@@ -492,7 +492,7 @@
   margin: 0;
   padding: 10px 6px;
   border: 0;
-  border-radius: 0;
+  border-radius: 14px;
   color: #17181e;
   background: transparent;
   box-shadow: none;
@@ -502,7 +502,7 @@
 .bubbletalk-conversation:hover,
 .bubbletalk-conversation:focus {
   border: 0;
-  background: rgba(var(--phone-accent-rgb), 0.07);
+  background: #eef2f4;
   box-shadow: none;
 }
 

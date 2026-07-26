@@ -677,11 +677,6 @@ class SmartphoneShell {
           <i class="fa-solid ${isFriends ? "fa-user-plus" : "fa-pen-to-square"}"></i>
         </button>`}
       </header>
-      <label class="phone-search">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="search" placeholder="${isFriends ? "친구 검색" : "대화 검색"}"
-          aria-label="${isFriends ? "친구 검색" : "대화 검색"}">
-      </label>
       <div class="${isFriends ? "bubbletalk-friend-list" : "phone-conversation-list"}">
         ${isFriends
           ? this.bubbleTalkFriendItems()
@@ -866,7 +861,6 @@ class SmartphoneShell {
         }
       });
     });
-    this.bindListSearch(content, ".bubbletalk-friend");
   }
 
   static bubbleTalkConversationItem(conversation) {
@@ -906,7 +900,6 @@ class SmartphoneShell {
         this.renderBubbleTalkChat(content, button.dataset.conversationId);
       });
     });
-    this.bindListSearch(content, ".bubbletalk-conversation");
   }
 
   static bindConversationList(content, app) {
