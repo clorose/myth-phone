@@ -656,6 +656,10 @@ class SmartphoneShell {
           section === "groups" ? room.type === "group" : room.type !== "group")
           .sort((a, b) => (b.listTime ?? 0) - (a.listTime ?? 0));
     const conversations = realRooms;
+    const chatFilter = isFriends ? "all" : (this.bubbleChatFilter ?? "all");
+    const filtered = conversations.filter((room) =>
+      chatFilter === "unread" ? room.unread > 0 : true);
+    const unreadRooms = conversations.filter((room) => room.unread > 0).length;
     const realUnread = (predicate) => realList
       .filter(predicate)
       .reduce((sum, room) => sum + room.unread, 0);
@@ -677,11 +681,18 @@ class SmartphoneShell {
           <i class="fa-solid ${isFriends ? "fa-user-plus" : "fa-pen-to-square"}"></i>
         </button>`}
       </header>
+      ${isFriends ? "" : `
+      <div class="bubbletalk-filters">
+        <button class="bubbletalk-filter ${chatFilter === "all" ? "is-active" : ""}" type="button" data-bubble-filter="all">전체</button>
+        <button class="bubbletalk-filter ${chatFilter === "unread" ? "is-active" : ""}" type="button" data-bubble-filter="unread">안읽음${unreadRooms ? ` ${unreadRooms}` : ""}</button>
+      </div>`}
       <div class="${isFriends ? "bubbletalk-friend-list" : "phone-conversation-list"}">
         ${isFriends
           ? this.bubbleTalkFriendItems()
           : conversations.length
-            ? conversations.map((conversation) => this.bubbleTalkConversationItem(conversation)).join("")
+            ? (filtered.length
+                ? this.bubbleGroupedListHTML(filtered)
+                : `<div class="bubbletalk-empty"><i class="fa-regular fa-comments"></i><p>해당하는 대화가 없습니다.</p></div>`)
             : `<div class="bubbletalk-empty"><i class="fa-regular fa-comments"></i><p>아직 대화가 없습니다.</p></div>`
         }
       </div>
@@ -713,7 +724,14 @@ class SmartphoneShell {
     }
     content.querySelectorAll("[data-bubbletalk-section]").forEach((button) => {
       button.addEventListener("click", () => {
+        this.bubbleChatFilter = "all";
         this.renderBubbleTalk(content, button.dataset.bubbletalkSection);
+      });
+    });
+    content.querySelectorAll("[data-bubble-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.bubbleChatFilter = button.dataset.bubbleFilter;
+        this.renderBubbleTalk(content, section);
       });
     });
     content.querySelector(".bubbletalk-npc-chat")?.addEventListener("click", () => {
@@ -722,6 +740,29 @@ class SmartphoneShell {
     content.querySelector(".bubbletalk-group-create")?.addEventListener("click", () => {
       this.renderGroupChatForm(content);
     });
+  }
+
+  static bubbleGroupedListHTML(rooms) {
+    // 대화가 많을 때만 날짜 구획을 켠다 — 적을 땐 라벨이 방 1개씩 감싸 휑해지므로
+    if (rooms.length < 8) {
+      return rooms.map((room) => this.bubbleTalkConversationItem(room)).join("");
+    }
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfYesterday = startOfToday - 86400000;
+    const buckets = { today: [], yesterday: [], older: [] };
+    rooms.forEach((room) => {
+      const time = room.listTime ?? 0;
+      const key = time >= startOfToday ? "today" : time >= startOfYesterday ? "yesterday" : "older";
+      buckets[key].push(room);
+    });
+    const labels = { today: "오늘", yesterday: "어제", older: "지난 대화" };
+    return ["today", "yesterday", "older"]
+      .filter((key) => buckets[key].length)
+      .map((key) =>
+        `<div class="bubbletalk-date-sep">${labels[key]}</div>`
+        + buckets[key].map((room) => this.bubbleTalkConversationItem(room)).join(""))
+      .join("");
   }
 
   static renderGroupChatForm(content) {
@@ -866,7 +907,7 @@ class SmartphoneShell {
   static bubbleTalkConversationItem(conversation) {
     const isGroup = conversation.type === "group";
     return `
-      <button class="bubbletalk-conversation" type="button"
+      <button class="bubbletalk-conversation ${conversation.unread ? "is-unread" : ""}" type="button"
         data-conversation-id="${conversation.id}" data-name="${esc(conversation.name)}">
         ${isGroup && conversation.participants?.length
           ? `<span class="bubbletalk-room-avatar is-mosaic">${

@@ -428,6 +428,50 @@
   scrollbar-width: none;
 }
 
+.bubbletalk-filters {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  padding: 2px 16px 8px;
+}
+
+.bubbletalk-filter {
+  min-height: 0;
+  margin: 0;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 11px;
+  color: var(--phone-secondary);
+  background: rgba(60, 60, 67, 0.06);
+  box-shadow: none;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.bubbletalk-filter:hover,
+.bubbletalk-filter:focus {
+  border: 0;
+  background: rgba(60, 60, 67, 0.1);
+  box-shadow: none;
+}
+
+.bubbletalk-filter.is-active {
+  color: #fff;
+  background: var(--phone-accent);
+}
+
+.bubbletalk-date-sep {
+  padding: 8px 14px 3px;
+  color: var(--phone-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.bubbletalk-conversation.is-unread strong {
+  font-weight: 800;
+}
+
 .bubbletalk-friend {
   display: grid;
   grid-template-columns: 46px 1fr 12px;
@@ -512,7 +556,7 @@
   width: 46px;
   height: 46px;
   place-items: center;
-  border-radius: 17px;
+  border-radius: 50%;
   color: #fff;
   background: linear-gradient(145deg, #8c82ed, #584ac8);
   font-size: 15px;
@@ -1907,6 +1951,7 @@
   gap: 2px;
   padding: 3px;
   box-sizing: border-box;
+  overflow: hidden;
   background: #eef1f3;
 }
 
