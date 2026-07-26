@@ -1069,10 +1069,9 @@ class SmartphoneShell {
       message.image ? `<img class="bubbletalk-image" src="${esc(message.image)}" alt="첨부 이미지">` : ""
     }${displayText ? `<span>${esc(displayText)}</span>` : ""}`;
     const readCount = message.readCount ?? (message.read === false ? 1 : 0);
-    const meta = last
-      ? `<span class="bubbletalk-message-meta">${
-          isSent && readCount ? `<b class="bubbletalk-read">${readCount}</b>` : ""
-        }<time>${esc(formatTime(message.time))}</time></span>`
+    // 버블톡은 시간 미표시(실시간 잡담). timestamp 값은 안읽음·읽음·정렬에만 쓰고 화면엔 안 그림.
+    const meta = last && isSent && readCount
+      ? `<span class="bubbletalk-message-meta"><b class="bubbletalk-read">${readCount}</b></span>`
       : "";
 
     if (isSent) {
