@@ -1,4 +1,5 @@
-import { escapeHTML as esc, formatTime, formatDuration, debug, userDisplayName } from "./utils.js";
+import { escapeHTML as esc, formatTime, formatDuration, userDisplayName } from "./utils.js";
+import { debug, error } from "./log.js";
 import { PhoneStore } from "./store.js";
 import { PhoneSocket } from "./socket.js";
 import { GmEditorWindow } from "./apps/gm-editor-window.js";
@@ -315,10 +316,10 @@ Hooks.once("ready", () => {
       PhoneStore.loadCallLog();
       SmartphoneShell.mount();
       SmartphoneShell.updateAppBadges();
-      console.info(`${MODULE_ID} | MythPhone 인터페이스를 준비했습니다.`);
+      debug("MythPhone 인터페이스를 준비했습니다.");
     })
-    .catch((error) => {
-      console.error(`${MODULE_ID} | MythPhone 초기화에 실패했습니다.`, error);
+    .catch((err) => {
+      error("MythPhone 초기화에 실패했습니다.", err);
       ui.notifications.error("MythPhone 데이터를 불러오지 못했습니다.");
     });
 });

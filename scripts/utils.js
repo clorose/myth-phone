@@ -27,21 +27,6 @@ export function formatDuration(totalSeconds) {
   return `${minutes}:${seconds}`;
 }
 
-// 디버그 로그: 모듈 설정 "debugLog"가 켜져 있을 때만
-// 콘솔과 화면 알림으로 출력한다. 끄면 아무것도 하지 않는다.
-export function debug(...args) {
-  let enabled = false;
-  try {
-    enabled = game.settings.get("myth-phone", "debugLog");
-  } catch {
-    return;
-  }
-  if (!enabled) return;
-
-  console.log("myth-phone |", ...args);
-  ui.notifications?.info(`MythPhone 디버그 | ${args.map(String).join(" ")}`);
-}
-
 // 폰에서 유저를 지칭할 때는 배정된 캐릭터 이름을 쓰고, 없으면 계정 이름으로 폴백.
 export function userDisplayName(user) {
   return user?.character?.name ?? user?.name ?? "알 수 없음";

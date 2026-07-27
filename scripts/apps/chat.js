@@ -1,4 +1,5 @@
-import { escapeHTML as esc, formatTime, debug, userDisplayName } from "../utils.js";
+import { escapeHTML as esc, formatTime, userDisplayName } from "../utils.js";
+import { debug, warn } from "../log.js";
 import { PhoneStore } from "../store.js";
 
 const MODULE_ID = "myth-phone";
@@ -523,7 +524,7 @@ export const chatMethods = {
       const PopoutClass = foundry.applications?.apps?.ImagePopout ?? ImagePopout;
       new PopoutClass({ src, window: { title: "이미지" } }).render(true);
     } catch (error) {
-      console.warn(`${MODULE_ID} | 이미지 팝업을 열 수 없어 새 창으로 대체합니다.`, error);
+      warn("이미지 팝업을 열 수 없어 새 창으로 대체합니다.", error);
       window.open(src, "_blank");
     }
   },
@@ -596,7 +597,7 @@ export const chatMethods = {
         oscillator.stop(now + offset + 0.16);
       }
     } catch (error) {
-      console.warn(`${MODULE_ID} | 알림음을 재생할 수 없습니다.`, error);
+      warn("알림음을 재생할 수 없습니다.", error);
     }
   },
 

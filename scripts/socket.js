@@ -4,7 +4,7 @@
 // 개인정보 원칙(FEATURES.md): 소켓 이벤트는 모든 클라이언트에 전달되므로
 // 각 핸들러는 수신 즉시 대상 사용자 ID를 검사하고 무관한 이벤트를 폐기한다.
 
-import { debug } from "./utils.js";
+import { debug } from "./log.js";
 
 const MODULE_ID = "myth-phone";
 const CHANNEL = `module.${MODULE_ID}`;

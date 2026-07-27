@@ -1,4 +1,5 @@
-import { escapeHTML as esc, debug } from "../utils.js";
+import { escapeHTML as esc } from "../utils.js";
+import { debug } from "../log.js";
 
 const MODULE_ID = "myth-phone";
 

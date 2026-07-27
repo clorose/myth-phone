@@ -2,7 +2,8 @@
 // 렌더러는 여기서 데이터를 읽고, 데이터 변경은 emit으로 구독자에게 알린다.
 // (버블톡 실채팅 전환 시 ChatMessage 훅이 이 스토어를 갱신하는 구조를 전제)
 
-import { userDisplayName, debug } from "./utils.js";
+import { userDisplayName } from "./utils.js";
+import { debug } from "./log.js";
 
 const MODULE_ID = "myth-phone";
 

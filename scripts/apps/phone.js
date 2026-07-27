@@ -1,4 +1,5 @@
-import { escapeHTML as esc, formatTime, formatDuration, debug, userDisplayName } from "../utils.js";
+import { escapeHTML as esc, formatTime, formatDuration, userDisplayName } from "../utils.js";
+import { debug, warn } from "../log.js";
 import { PhoneStore } from "../store.js";
 import { PhoneSocket } from "../socket.js";
 
@@ -395,7 +396,7 @@ export const phoneMethods = {
       try {
         await this.audioContext.resume();
       } catch (error) {
-        console.warn(`${MODULE_ID} | 벨소리를 재생할 수 없습니다.`, error);
+        warn("벨소리를 재생할 수 없습니다.", error);
         return;
       }
     }
