@@ -42,7 +42,10 @@ lint·테스트 러너 없음.
   Foundry `game.socket`의 단일 모듈 채널 `module.myth-phone` 하나에 타입별 핸들러 맵을 얹는다.
   `send(type, payload)` / `on(type, handler)`.
 - **`scripts/utils.js`** — `escapeHTML`(코드에선 `esc`로 import), `formatTime`, `formatDuration`,
-  `debug`, `userDisplayName`.
+  `userDisplayName`.
+- **`scripts/log.js` — 로깅 단일 제어점.** `debug`(개발용, `debugLog` 설정 게이트·기본 off → 배포 시
+  자동 조용) / `warn` / `error`(실제 실패용, 항상 출력). **코드 어디서도 `console.*`를 직접 호출하지 말고
+  반드시 이 함수를 쓴다** — 로깅 정책이 이 파일 하나에 모인다.
 
 ## 반드시 알아야 할 설계 결정
 

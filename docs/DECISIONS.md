@@ -14,6 +14,22 @@
 - **CSS**: `.gm-*` 규칙은 `#fvtt-smartphone`에 안 묶여 있어 그대로 적용되나, `var(--phone-*)` 토큰이 폰 스코프에만 있어 창 루트 `.mp-gm-app`에 토큰을 다시 선언했다.
 - **플레이어 갱신 분리.** 옛 `refreshOpenEditorApps`는 폰의 플레이어 목록(messages/email)과 편집기를 함께 갱신했는데, 편집기가 폰을 떠나면서 둘로 나눴다 — `SmartphoneShell.refreshOpenPlayerData()`(플레이어 폰)와 `GmEditorWindow.refreshIfOpen()`(다른 GM의 편집 창).
 
+### 로깅 — 단일 제어점 `scripts/log.js`
+
+개발 로그와 실제 오류 로그를 한 파일로 모았다. 코드 어디서도 `console.*`를 직접 부르지 않고 `log.js`의 함수만 쓴다.
+
+- **`debug(...)`** — 개발·추적용. 모듈 설정 `debugLog`로 게이트, **기본 꺼짐**. 배포 시 자동으로 조용해져 따로 끌 것이 없다.
+- **`warn(...)` / `error(...)`** — 실제 실패용(초기화·리소스 재생 실패 등). 실패했을 때만 뜨므로 배포에도 남긴다.
+- **왜.** 로깅 정책(끄기·접두어·게이트)을 파일 하나에서 관리하려고. `console.*`가 흩어져 있으면 배포 전 일괄 통제가 어렵다. `debug`는 `utils.js`에서 `log.js`로 옮겼다. **원시 `console.*` 직접 호출 금지.**
+
+### GM 편집기 목록 — 삭제 클릭 판별을 좌표로
+
+쓰레기통(`.gm-editor-row-del`)을 눌러도 삭제가 안 되고 편집 상세가 열리던 버그.
+
+- **원인(콘솔 로그로 확인).** 행이 `<button>`이라 자식 아이콘을 눌러도 `event.target`이 항상 버튼으로 잡힌다(자식으로 포인터가 안 감). 그래서 `closest("[data-gm-delete]")` 판별이 실패하고 편집 갈래로 빠졌다. FA의 `<i>`→svg 치환 문제가 아니었다(로그의 `outerHTML`에 `<i>` 그대로 확인).
+- **결정.** 요소/`closest` 판별 대신 **클릭 좌표가 트래시 박스(`getBoundingClientRect`) 안이면 삭제**로 처리. pointer-events·FA·CSS와 무관하게 동작한다. 보조로 `.gm-editor-row-del`에 `pointer-events: auto`도 뒀다.
+- **삭제 확인창.** 실수 삭제 방지로 `DialogV2.confirm`을 추가(대상 이름 표시). 정본은 월드 설정이라 되돌리기 어렵기 때문.
+
 ## 2026-07-27
 
 ### GM 연출 편집기 — 폰 안 앱, 월드 정본

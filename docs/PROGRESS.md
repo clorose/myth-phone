@@ -52,6 +52,12 @@
 - 목적: 저작 공간 확보 → 다음 단계 "메시지/이메일 수신 대상 지정"의 토대
 - ⚠️ Foundry 스모크 테스트 미완: ApplicationV2 렌더 계약·Scene Controls v14 버튼 표시 실제 확인 필요
 
+### 2026-07-28 — 버그 수정·로깅 정리
+
+- Scene Controls GM툴 툴의 deprecated `onClick` 제거(`onChange`만 유지) — v13 경고 해소
+- GM 편집기 목록 삭제 버그 수정: 클릭이 버튼에 잡혀 편집으로 새던 것을 **클릭 좌표 판별**로 고침. 삭제 확인창(`DialogV2.confirm`) 추가
+- 로깅을 `scripts/log.js` 단일 제어점으로 일원화(`debug`/`warn`/`error`, raw `console.*` 제거). `debug`는 `debugLog` 게이트로 기본 꺼짐 → 배포 시 자동 조용
+
 ## 앞으로 할 것
 
 1. **메시지/이메일 수신 대상 지정** — GM 편집기에서 각 항목을 누가 볼지 지정(`User.id` 배열). 세로 체크박스 리스트(max-height 스크롤). 결정 대기: 기본값(전체공개 vs 숨김), 다중 대상 표시(개인 문자 vs 공유 단체방)
