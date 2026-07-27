@@ -26,15 +26,18 @@ lint·테스트 러너 없음.
 
 ## 아키텍처 (전체 그림)
 
-코드는 3개 계층 + 데이터로 나뉜다. `scripts/myth-phone.js`가 압도적으로 크지만(2300줄+),
-실제 구조는 단순하다.
+코드는 셸 + 앱 모듈 + 공통 계층 + 데이터로 나뉜다. 구조는 단순하다.
 
-- **`scripts/myth-phone.js` — `SmartphoneShell` (UI 전부, static 클래스).**
-  `mount()`가 `#fvtt-smartphone` DOM을 body에 한 번 붙이고, 홈 그리드와 모든 앱을 그린다.
+- **`scripts/myth-phone.js` — `SmartphoneShell` (셸, static 클래스, ~300줄).**
+  `mount()`가 `#fvtt-smartphone` DOM을 body에 한 번 붙이고, 홈 그리드·전역 크롬을 그린다.
   앱 전환은 `renderApp(wrapper, app)` → `view.dataset.app = app` → `renderers[app]()` 맵으로 라우팅.
-  각 앱 렌더러는 **템플릿 문자열을 `innerHTML`에 넣고 수동으로 이벤트 리스너를 붙이는 방식**
-  (프레임워크·가상 DOM 없음). 상태는 static 필드(열린 방 id, 타이머 등)와
-  `.smartphone-app-view`의 상태 클래스(`is-chat-open`, `is-call-screen`)로 관리한다.
+  상태는 static 필드(열린 방 id, 타이머 등)와 `.smartphone-app-view`의 상태 클래스(`is-chat-open`,
+  `is-call-screen`)로 관리한다. 파일 하단에서 각 앱 모듈을 `Object.assign(SmartphoneShell, xMethods)`로 붙인다.
+- **`scripts/apps/*.js` — 앱별 렌더러** (`phone`·`chat`·`email`·`browser`·`contacts`·`notes`·`settings`·`gm-editor`).
+  각 파일이 메서드 묶음(`chatMethods` 등)을 export하고 셸에 `Object.assign`으로 얹힌다 — 그래서 메서드 본문의
+  `this.*`는 실행 시 `SmartphoneShell`로 해석되고, **어느 모듈에 있든 모든 메서드가 같은 클래스에 붙어**
+  앱 간 헬퍼 호출이 그대로 된다. 렌더는 **템플릿 문자열을 `innerHTML`에 넣고 수동으로 리스너를 붙이는 방식**
+  (프레임워크·가상 DOM 없음). `gm-editor.js`의 `gmEditorMethods`는 독립 창 `GmEditorWindow`에도 재사용된다.
 - **`scripts/store.js` — `PhoneStore` (데이터 정본).**
   `callScenes`(Map), `data.messages`/`data.emails`, 방·읽음 상태를 보관. `SmartphoneShell`은
   `PhoneStore.data`를 접근자로 참조만 한다. `load()`가 번들 JSON과 월드 설정에서 초기 데이터를 채운다.
