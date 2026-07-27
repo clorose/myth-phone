@@ -2643,6 +2643,12 @@
   font-size: 13px;
   opacity: 0.35;
   cursor: pointer;
+  pointer-events: auto;
+}
+
+/* 아이콘 글리프는 통과시켜 클릭이 항상 삭제 span에 잡히게 */
+.gm-editor-row-del > i {
+  pointer-events: none;
 }
 
 .gm-editor-row:hover .gm-editor-row-del {

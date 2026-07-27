@@ -60,13 +60,17 @@ export const gmEditorMethods = {
     content.querySelectorAll("[data-gm-tab]").forEach((btn) =>
       btn.addEventListener("click", () => this.renderGmEditor(content, btn.dataset.gmTab)));
     content.querySelectorAll(".gm-editor-row").forEach((row) => {
-      // 삭제는 트래시 요소에 직접 리스너 — FA가 <i>를 svg로 바꿔도 무관.
-      row.querySelector("[data-gm-delete]")?.addEventListener("click", (event) => {
-        event.stopPropagation();
-        this.gmEditorDelete(content, kind, row.dataset.gmId);
+      row.addEventListener("click", (event) => {
+        // 클릭은 항상 버튼(row)에 잡힌다(자식 아이콘으로 포인터가 안 감) — 로그로 확인.
+        // 그래서 요소 판별 대신 클릭 좌표가 트래시 박스 안이면 삭제, 아니면 편집.
+        const box = row.querySelector("[data-gm-delete]")?.getBoundingClientRect();
+        if (box && event.clientX >= box.left && event.clientX <= box.right
+                && event.clientY >= box.top && event.clientY <= box.bottom) {
+          this.gmEditorDelete(content, kind, row.dataset.gmId);
+          return;
+        }
+        this.renderGmEditorDetail(content, kind, row.dataset.gmId);
       });
-      row.addEventListener("click", () =>
-        this.renderGmEditorDetail(content, kind, row.dataset.gmId));
     });
     content.querySelector(".gm-editor-add").addEventListener("click", () =>
       this.gmEditorCreate(content, kind));
