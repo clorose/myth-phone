@@ -54,7 +54,9 @@ lint·테스트 러너 없음.
 - **연출용 데이터의 정본은 월드 설정이다.** `myth-phone.messages`/`myth-phone.emails`
   (scope: world). 번들 `data/messages.json`·`data/emails.json`은 **최초 1회만** 시드로 옮겨 심고
   (`seeded` 플래그), 이후엔 월드 설정이 정본. **재시드하지 말 것** — 삭제한 항목이 되살아난다.
-  GM 전용 "연출 편집" 앱이 이 설정을 편집한다.
+  GM 전용 "연출 편집기"가 이 설정을 편집한다. **편집기는 폰 앱이 아니라 좌측 Scene Controls에서 여는
+  독립 ApplicationV2 창**(`scripts/apps/gm-editor-window.js`, 렌더 로직은 `apps/gm-editor.js`의
+  `gmEditorMethods` 재사용). 플레이어 폰은 이 정본을 읽기만 한다. 상세는 `docs/DECISIONS.md`(2026-07-28).
 - **소켓 프라이버시 모델**: `game.socket`은 모든 클라이언트에 브로드캐스트된다. 그래서 각 핸들러는
   **수신 즉시 대상 사용자 ID를 검사하고 무관한 이벤트를 폐기**해야 한다. 유저 간 개인톡은
   참여자가 아닌 클라이언트의 스토어에 반영되지 않는다.

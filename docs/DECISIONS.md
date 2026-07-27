@@ -1,8 +1,23 @@
 # MythPhone 개발 결정 기록
 
+## 2026-07-28
+
+### GM 연출 편집기 — 폰에서 분리, 독립 창으로 이전
+
+07-27에 "폰 안 앱"으로 넣었던 편집기를 **폰에서 떼어내 독립 ApplicationV2 창**으로 옮겼다. 아래 07-27 결정의 "폰 안 앱" 부분을 대체한다(데이터 정본·편집 방식·저장·JSON 결정은 그대로 유지).
+
+- **왜 옮겼나.** 편집기가 저작 도구인데 360px 폰 프레임에 갇혀 폼·명단이 좁았다. 특히 **수신 대상 지정**(메시지/이메일을 어느 플레이어에게 보일지) 기능을 붙이려면 긴 이름·여러 명 명단을 담을 공간이 필요한데, 폰 폭으로는 칩·2열 폼이 무너진다. 창은 크기 조절이 되고 화면 제약이 사라진다.
+- **어디서 여나.** 좌측 **Scene Controls** 툴바에 GM 전용 버튼(`getSceneControlButtons` 훅, v14 record 구조)을 넣어 연다. 폴백으로 `game.modules.get("myth-phone").api.openGmEditor()`도 노출한다(버튼이 안 뜰 때 대비).
+- **구현 비용은 낮았다.** 데이터 계층(`editorData`/`saveEditorData`)이 이미 설정+PhoneStore로 분리돼 있어 그대로 이식됐다. 렌더 로직(`gmEditorMethods`, 명령형 innerHTML)도 `SmartphoneShell` 대신 `GmEditorWindow` 인스턴스에 `Object.assign`으로 그대로 얹었다. 창은 빈 `.gm-editor-root` div 하나만 프레임에 붙이고 그 안을 기존 로직이 직접 그린다. GM 가드 폴백만 `showHome`→`this.close()`로 바꿨다.
+- **WYSIWYG는 유지.** 말풍선 빌더는 그대로 옮겨져 플레이어가 볼 화면대로 편집한다. (창 한쪽 폰 미리보기 pane은 이번 범위 밖, 추후.)
+- **CSS**: `.gm-*` 규칙은 `#fvtt-smartphone`에 안 묶여 있어 그대로 적용되나, `var(--phone-*)` 토큰이 폰 스코프에만 있어 창 루트 `.mp-gm-app`에 토큰을 다시 선언했다.
+- **플레이어 갱신 분리.** 옛 `refreshOpenEditorApps`는 폰의 플레이어 목록(messages/email)과 편집기를 함께 갱신했는데, 편집기가 폰을 떠나면서 둘로 나눴다 — `SmartphoneShell.refreshOpenPlayerData()`(플레이어 폰)와 `GmEditorWindow.refreshIfOpen()`(다른 GM의 편집 창).
+
 ## 2026-07-27
 
 ### GM 연출 편집기 — 폰 안 앱, 월드 정본
+
+> **참고(2026-07-28 갱신):** 아래 "폰 안 앱" 위치 결정은 위 07-28 결정으로 대체됨. 데이터·편집·저장 방식은 유효.
 
 메시지·이메일의 연출용 데이터를 GM이 인게임에서 직접 만들고 고칠 수 있게 편집기를 넣었다. 위치·형태를 두고 검토한 결과:
 

@@ -76,6 +76,53 @@ new Popout({ src, window: { title } }).render(true);
 
 - Foundry 서버는 `Data/` 아래 정적 파일을 그대로 서빙한다. `worlds/월드명/sites/a.html` 같은 상대 경로를 iframe `src`로 쓰면 된다.
 
+## ApplicationV2 창 (연출 편집기)
+
+명령형 innerHTML 렌더러를 프레임워크와 안 싸우고 창에 담는 최소 패턴:
+
+```js
+const { ApplicationV2 } = foundry.applications.api;
+class GmEditorWindow extends ApplicationV2 {
+  static DEFAULT_OPTIONS = {
+    id: "myth-phone-gm-editor", classes: ["mp-gm-app"], tag: "div",
+    window: { title: "...", icon: "fa-solid fa-user-pen", resizable: true },
+    position: { width: 760, height: 680 },
+  };
+  async _renderHTML() { return ""; }                  // 프레임워크 렌더는 빈 값
+  _replaceHTML(_r, content) {                          // content = .window-content
+    content.innerHTML = `<div class="gm-editor-root"></div>`;
+    this._root = content.querySelector(".gm-editor-root");
+    this.renderBody();                                 // 여기서부터 직접 DOM
+  }
+}
+```
+
+- 재렌더는 `this.render()`(프레임워크)가 아니라 `this._root`를 직접 다시 그리는 함수로 한다. 프레임워크 라이프사이클을 안 건드려 명령형 로직이 그대로 산다.
+- 창 밖(폰) CSS 토큰(`var(--phone-*)`)은 `#fvtt-smartphone`에만 있으므로 창 루트 클래스(`.mp-gm-app`)에 다시 선언한다.
+
+## Scene Controls — 좌측 툴바 버튼 (v14 record 구조)
+
+```js
+Hooks.on("getSceneControlButtons", (controls) => {
+  if (!game.user.isGM) return;
+  controls["myth-phone"] = {                 // controls는 배열이 아니라 record(객체)
+    name: "myth-phone", title: "MythPhone",
+    icon: "fa-solid fa-mobile-screen-button", order: 100, visible: true,
+    onChange: () => {}, activeTool: "gm-editor",
+    tools: {                                   // tools도 record
+      "gm-editor": {
+        name: "gm-editor", title: "...", icon: "fa-solid fa-user-pen",
+        order: 1, button: true,                // 즉시 실행(토글 아님)
+        onClick: openFn, onChange: openFn,     // 버전차 대비 둘 다
+      },
+    },
+  };
+});
+```
+
+- v13+에서 `controls`와 `tools`는 배열이 아니라 **record(객체)**다. 클릭 액션은 `button: true` + `onChange`(일부 버전 `onClick`).
+- 훅 표시가 안 되는 버전 대비 폴백으로 `game.modules.get(ID).api.openGmEditor()`도 노출해 둔다.
+
 ## v14에서 주의할 것
 
 - ApplicationV1(`getData`/`activateListeners`)은 쓰지 않는다. AppV2 계열 또는 직접 DOM.
