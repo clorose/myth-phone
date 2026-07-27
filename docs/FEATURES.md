@@ -133,7 +133,6 @@ game.socket.on("module.myth-phone", (payload) => {
 - 진동만 사용
 - 전화 미리보기
 - 수신 화면 자동 표시
-- 방해 금지 모드
 
 ## 버블톡
 
