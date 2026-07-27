@@ -1,7 +1,7 @@
 import { escapeHTML as esc, formatTime, formatDuration, debug, userDisplayName } from "./utils.js";
 import { PhoneStore } from "./store.js";
 import { PhoneSocket } from "./socket.js";
-import { gmEditorMethods } from "./apps/gm-editor.js";
+import { GmEditorWindow } from "./apps/gm-editor-window.js";
 import { phoneMethods } from "./apps/phone.js";
 import { chatMethods } from "./apps/chat.js";
 import { emailMethods } from "./apps/email.js";
@@ -88,11 +88,6 @@ class SmartphoneShell {
                 <span class="smartphone-app-icon settings"><i class="fa-solid fa-gear"></i></span>
                 <span>설정</span>
               </button>
-              ${game.user.isGM ? `
-              <button type="button" data-app="gm-editor">
-                <span class="smartphone-app-icon gm-editor"><i class="fa-solid fa-user-pen"></i></span>
-                <span>연출 편집</span>
-              </button>` : ""}
             </div>
 
             <div class="smartphone-dock" aria-label="즐겨찾기">
@@ -177,8 +172,7 @@ class SmartphoneShell {
       email: () => this.renderEmail(content),
       contacts: () => this.renderContacts(content),
       notes: () => this.renderNotes(content),
-      settings: () => this.renderSettings(content),
-      "gm-editor": () => this.renderGmEditor(content)
+      settings: () => this.renderSettings(content)
     };
     renderers[app]?.();
   }
@@ -211,9 +205,19 @@ class SmartphoneShell {
     this.phone?.classList.remove("is-open");
     this.phone?.setAttribute("aria-hidden", "true");
   }
+
+  // GM이 연출 정본(messages·emails)을 바꾸면 열려 있는 플레이어 목록 화면을 갱신한다.
+  // (대화 스레드를 열어둔 중이면 화면을 뒤엎지 않는다.)
+  static refreshOpenPlayerData() {
+    if (!this.wrapper) return;
+    const view = this.wrapper.querySelector(".smartphone-app-view");
+    if (!view || view.hidden) return;
+    if (!["messages", "email"].includes(view.dataset.app)) return;
+    if (view.classList.contains("is-chat-open")) return;
+    this.renderApp(this.wrapper, view.dataset.app);
+  }
 }
 
-Object.assign(SmartphoneShell, gmEditorMethods);
 Object.assign(SmartphoneShell, phoneMethods);
 Object.assign(SmartphoneShell, chatMethods);
 Object.assign(SmartphoneShell, emailMethods);
@@ -297,8 +301,13 @@ Hooks.once("ready", () => {
     const kind = ["messages", "emails"].find((key) => setting.key === `${MODULE_ID}.${key}`);
     if (!kind) return;
     PhoneStore.data[kind] = game.settings.get(MODULE_ID, kind) ?? [];
-    SmartphoneShell.refreshOpenEditorApps();
+    SmartphoneShell.refreshOpenPlayerData();  // 플레이어 폰의 목록 화면
+    GmEditorWindow.refreshIfOpen();           // 다른 GM이 열어둔 편집 창
   });
+
+  // 다른 매크로·콘솔에서 편집기를 열 수 있는 폴백 API (좌측 버튼이 안 뜰 때 대비)
+  const mod = game.modules.get(MODULE_ID);
+  if (mod) mod.api = { openGmEditor: () => GmEditorWindow.open() };
 
   PhoneStore.load()
     .then(() => {
@@ -312,4 +321,30 @@ Hooks.once("ready", () => {
       console.error(`${MODULE_ID} | MythPhone 초기화에 실패했습니다.`, error);
       ui.notifications.error("MythPhone 데이터를 불러오지 못했습니다.");
     });
+});
+
+// 좌측 Scene Controls 툴바에 GM 전용 "연출 편집기" 버튼을 넣는다 (v14 record 구조).
+Hooks.on("getSceneControlButtons", (controls) => {
+  if (!game.user.isGM) return;
+  const open = () => GmEditorWindow.open();
+  controls[MODULE_ID] = {
+    name: MODULE_ID,
+    title: "MythPhone",
+    icon: "fa-solid fa-mobile-screen-button",
+    order: 100,
+    visible: true,
+    onChange: () => {},
+    activeTool: "gm-editor",
+    tools: {
+      "gm-editor": {
+        name: "gm-editor",
+        title: "연출 편집기 열기",
+        icon: "fa-solid fa-user-pen",
+        order: 1,
+        button: true,
+        onClick: open,
+        onChange: open,
+      },
+    },
+  };
 });

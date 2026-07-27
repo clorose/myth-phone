@@ -18,9 +18,10 @@ export const gmEditorMethods = {
   },
 
   renderGmEditor(content, tab = "messages") {
-    if (!game.user.isGM) { this.showHome(this.wrapper); return; }
+    if (!game.user.isGM) { this.close(); return; }
     content.closest(".smartphone-app-view")?.classList.remove("is-chat-open");
     const kind = tab === "emails" ? "emails" : "messages";
+    this.tab = kind;
     const list = this.editorData(kind);
 
     const rows = kind === "messages"
@@ -106,7 +107,7 @@ export const gmEditorMethods = {
   },
 
   renderGmEditorDetail(content, kind, id) {
-    if (!game.user.isGM) { this.showHome(this.wrapper); return; }
+    if (!game.user.isGM) { this.close(); return; }
     const list = foundry.utils.deepClone(this.editorData(kind));
     const item = list.find((x) => x.id === id);
     if (!item) { this.renderGmEditor(content, kind); return; }
@@ -352,19 +353,5 @@ export const gmEditorMethods = {
       ui.notifications.info("MythPhone | 가져오기 완료.");
       this.renderGmEditor(content, kind);
     });
-  },
-
-  // 원격 GM이 정본을 바꾸면 열려 있는 목록 화면을 갱신 (상세 편집 중이면 건너뜀)
-  refreshOpenEditorApps() {
-    if (!this.wrapper) return;
-    const view = this.wrapper.querySelector(".smartphone-app-view");
-    if (!view || view.hidden) return;
-    const app = view.dataset.app;
-    if (!["messages", "email", "gm-editor"].includes(app)) return;
-    // 대화 스레드나 편집 상세를 열어둔 중이면 갱신으로 화면을 뒤엎지 않는다
-    if (view.classList.contains("is-chat-open")) return;
-    const content = this.wrapper.querySelector(".smartphone-app-content");
-    if (content.querySelector(".gm-editor-detail")) return;
-    this.renderApp(this.wrapper, app);
   },
 };

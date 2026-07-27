@@ -2497,6 +2497,33 @@
 
 /* ===== GM 연출 편집기 ===== */
 
+/* 편집기는 폰에서 분리된 독립 ApplicationV2 창(.mp-gm-app)에서 그려진다.
+   .gm-* 규칙은 폰 토큰(var(--phone-*))을 쓰므로 창 루트에 토큰을 다시 선언한다. */
+.mp-gm-app {
+  --phone-accent: #6e5ee8;
+  --phone-accent-rgb: 110, 94, 232;
+  --phone-glass: rgba(247, 247, 252, 0.74);
+  --phone-divider: rgba(60, 60, 67, 0.14);
+  --phone-label: #111116;
+  --phone-secondary: rgba(60, 60, 67, 0.68);
+}
+
+.mp-gm-app .window-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.gm-editor-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  color: var(--phone-label);
+  background: #fff;
+}
+
 /* 상세 화면에선 자체 뒤로가기를 쓰므로 전역 뒤로가기를 숨긴다 */
 .smartphone-app-view:has(.gm-editor-detail) > .smartphone-back {
   display: none;
