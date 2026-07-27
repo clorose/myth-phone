@@ -28,7 +28,7 @@ lint·테스트 러너 없음.
 
 코드는 셸 + 앱 모듈 + 공통 계층 + 데이터로 나뉜다. 구조는 단순하다.
 
-- **`scripts/myth-phone.js` — `SmartphoneShell` (셸, static 클래스, ~300줄).**
+- **`scripts/myth-phone.js` — `SmartphoneShell` (셸, static 클래스).**
   `mount()`가 `#fvtt-smartphone` DOM을 body에 한 번 붙이고, 홈 그리드·전역 크롬을 그린다.
   앱 전환은 `renderApp(wrapper, app)` → `view.dataset.app = app` → `renderers[app]()` 맵으로 라우팅.
   상태는 static 필드(열린 방 id, 타이머 등)와 `.smartphone-app-view`의 상태 클래스(`is-chat-open`,
@@ -75,7 +75,11 @@ lint·테스트 러너 없음.
 
 ## 저장 위치 요약
 
-- 월드 설정(`scope: world`): `sites`(브라우저), `messages`·`emails`(연출용), `seeded`(시드 여부), `debugLog`
-- Actor 플래그: 캐릭터 연락처
-- User 플래그: 통화 기록(발신, 최근 50건). 일부 수신·거절 상태는 클라이언트 세션 메모리
+- **월드 설정**(`scope: world`): GM이 만드는 공유 정본 — 연출용 메시지·이메일, 브라우저 사이트, 시드 플래그.
+- **클라이언트 설정**(`scope: client`): 사용자별 개인 취향 — 알림 토글, 디버그 로그.
+- **Actor 플래그**: 캐릭터 연락처.
+- **User 플래그**: 통화 기록.
+- **ChatMessage 귓속말**(`flags.myth-phone`): 버블톡 실채팅 전체.
+
+(구체적 설정 키·정확한 수치는 여기 나열하지 않는다 — 코드가 정본이고, 나열하면 금방 낡는다.)
 - ChatMessage(`flags.myth-phone` 귓속말): 버블톡 실채팅 전체
