@@ -83,7 +83,7 @@ export const gmEditorMethods = {
           <strong>${esc(title)}</strong>
           <small>${esc(subtitle)}</small>
         </span>
-        <i class="fa-solid fa-trash gm-editor-row-del" data-gm-delete aria-label="삭제"></i>
+        <span class="gm-editor-row-del" data-gm-delete aria-label="삭제"><i class="fa-solid fa-trash"></i></span>
       </button>
     `;
   },

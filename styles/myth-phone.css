@@ -2636,9 +2636,13 @@
 }
 
 .gm-editor-row-del {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
   color: #c25a5a;
   font-size: 13px;
   opacity: 0.35;
+  cursor: pointer;
 }
 
 .gm-editor-row:hover .gm-editor-row-del {
