@@ -306,6 +306,7 @@
 .smartphone-app-icon.browser { background: linear-gradient(150deg, #70c8ff, #246dd4); }
 .smartphone-app-icon.camera { background: linear-gradient(150deg, #eff0f4, #aeb2bc); color: #31333a; }
 .smartphone-app-icon.music { background: linear-gradient(150deg, #ff6e91, #dc315c); }
+.smartphone-app-icon.gm-editor { background: linear-gradient(150deg, #8e83f0, #5a48c8); }
 
 .smartphone-app-view[data-app="bubbletalk"] {
   --phone-accent: #31aee5;
@@ -2492,4 +2493,430 @@
 .phone-email-body .bubbletalk-image {
   max-width: 100%;
   margin-top: 6px;
+}
+
+/* ===== GM 연출 편집기 ===== */
+
+/* 상세 화면에선 자체 뒤로가기를 쓰므로 전역 뒤로가기를 숨긴다 */
+.smartphone-app-view:has(.gm-editor-detail) > .smartphone-back {
+  display: none;
+}
+
+/* .phone-page-header > button(우상단 액션)보다 우선해야 좌상단 배치가 이긴다 */
+.gm-editor-header .gm-editor-back {
+  position: absolute;
+  top: 22px;
+  right: auto;
+  bottom: auto;
+  left: 12px;
+  z-index: 3;
+  width: 34px;
+  min-width: 0;
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--phone-accent);
+  background: transparent;
+  box-shadow: none;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gm-editor-tabs {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin: 0 14px 8px;
+}
+
+.gm-editor-tabs button {
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--phone-divider);
+  border-radius: 10px;
+  color: var(--phone-secondary);
+  background: rgba(118, 118, 128, 0.08);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gm-editor-tabs button.is-active {
+  color: white;
+  border-color: transparent;
+  background: var(--phone-accent);
+}
+
+.gm-editor-list {
+  flex: 1;
+  overflow: auto;
+  padding: 0 12px 8px;
+  scrollbar-width: none;
+}
+
+.gm-editor-row {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 44px 1fr 26px;
+  align-items: center;
+  gap: 11px;
+  height: auto;
+  min-height: 0;
+  margin: 0 0 4px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
+  line-height: normal;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gm-editor-row:hover,
+.gm-editor-row:focus {
+  background: rgba(var(--phone-accent-rgb), 0.08);
+}
+
+.gm-editor-row-copy {
+  min-width: 0;
+}
+
+.gm-editor-row-copy strong {
+  display: block;
+  overflow: hidden;
+  color: var(--phone-label);
+  font-size: 14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gm-editor-row-copy small {
+  display: block;
+  overflow: hidden;
+  color: var(--phone-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.gm-editor-row-del {
+  color: #c25a5a;
+  font-size: 13px;
+  opacity: 0.35;
+}
+
+.gm-editor-row:hover .gm-editor-row-del {
+  opacity: 1;
+}
+
+.gm-editor-io {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 8px 14px 12px;
+  border-top: 1px solid var(--phone-divider);
+}
+
+.gm-editor-io button {
+  flex: 1;
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--phone-divider);
+  border-radius: 9px;
+  color: var(--phone-secondary);
+  background: white;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gm-editor-io button:hover {
+  border-color: var(--phone-accent);
+  color: var(--phone-accent);
+}
+
+.gm-editor-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 4px 14px 12px;
+  scrollbar-width: none;
+}
+
+.gm-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px 10px;
+  margin-bottom: 12px;
+}
+
+.gm-fld {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.gm-fld.gm-full {
+  grid-column: 1 / -1;
+}
+
+.gm-fld span {
+  color: var(--phone-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.gm-fld input,
+.gm-fld select,
+.gm-fld textarea {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 9px;
+  color: var(--phone-label);
+  background: #f4f5f8;
+  box-shadow: none;
+  font-size: 13px;
+}
+
+.gm-fld textarea {
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.gm-builder-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: var(--phone-secondary);
+  font-size: 11px;
+}
+
+.gm-builder-head b {
+  color: var(--phone-label);
+  font-size: 11.5px;
+}
+
+.gm-canvas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+  padding: 14px 12px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 80% 12%, rgba(var(--phone-accent-rgb), 0.06), transparent 34%),
+    #f2f3f7;
+}
+
+.gm-canvas-empty {
+  margin: auto;
+  color: #9a9ba5;
+  font-size: 12px;
+}
+
+.gm-bubble-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 88%;
+}
+
+.gm-bubble-row.is-received {
+  align-self: flex-start;
+}
+
+.gm-bubble-row.is-sent {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.gm-bubble-row p {
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 16px;
+  font-size: 12.5px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gm-bubble-row.is-received p {
+  border-bottom-left-radius: 5px;
+  color: #26272d;
+  background: rgba(118, 118, 128, 0.16);
+}
+
+.gm-bubble-row.is-sent p {
+  border-bottom-right-radius: 5px;
+  color: white;
+  background: var(--phone-accent);
+}
+
+.gm-bubble-tools {
+  display: none;
+  gap: 3px;
+}
+
+.gm-bubble-row:hover .gm-bubble-tools {
+  display: flex;
+}
+
+.gm-bubble-tools button {
+  width: 24px;
+  min-width: 0;
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: #5a5a66;
+  background: rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gm-bubble-tools button:hover {
+  color: var(--phone-accent);
+  background: rgba(var(--phone-accent-rgb), 0.16);
+}
+
+.gm-bubble-edit {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--phone-accent);
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.35;
+  resize: none;
+}
+
+.gm-compose {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 9px 12px 11px;
+  border-top: 1px solid var(--phone-divider);
+  background: var(--phone-glass);
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+
+.gm-compose.gm-compose-save {
+  grid-template-columns: 1fr;
+}
+
+.gm-seg {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--phone-divider);
+  border-radius: 9px;
+}
+
+.gm-seg button {
+  width: auto;
+  min-width: 0;
+  height: 34px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  color: var(--phone-secondary);
+  background: white;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gm-seg button.is-on {
+  color: white;
+  background: var(--phone-accent);
+}
+
+.gm-compose-input {
+  width: 100%;
+  height: 36px;
+  min-height: 36px;
+  max-height: 92px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid #d8d8df;
+  border-radius: 12px;
+  color: #17181e;
+  background: #f7f7f9;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  resize: none;
+}
+
+.gm-compose-add {
+  width: auto;
+  min-width: 0;
+  height: 36px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 11px;
+  color: white;
+  background: var(--phone-accent);
+  box-shadow: none;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gm-json {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 10px;
+  color: var(--phone-label);
+  background: #f4f5f8;
+  box-shadow: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.gm-import-hint {
+  margin: 0 0 8px;
+  color: var(--phone-secondary);
+  font-size: 12px;
+}
+
+.gm-import-hint b {
+  color: #c25a5a;
 }

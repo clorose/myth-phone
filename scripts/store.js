@@ -34,20 +34,33 @@ export const PhoneStore = {
     this.callScenes = new Map((data.scenes ?? []).map((scene) => [scene.id, scene]));
   },
 
+  // 메시지·이메일 연출 데이터는 월드 설정(game.settings, world scope)이 정본.
+  // GM 편집기가 여기에 쓰고, 최초 1회는 모듈 번들 JSON을 시드로 옮겨 심는다.
+  // (빈 배열 = 의도적으로 비운 상태이므로 seeded 플래그로 "미시드"와 구분한다)
   async loadMessageData() {
-    const appNames = ["messages", "emails"];
-    const responses = await Promise.all(
-      appNames.map((app) => fetch(`modules/${MODULE_ID}/data/${app}.json`))
-    );
-
-    for (const [index, response] of responses.entries()) {
-      const app = appNames[index];
-      if (!response.ok) {
-        throw new Error(`${app} 데이터를 불러오지 못했습니다: ${response.status}`);
-      }
-      const data = await response.json();
-      this.data[app] = app === "emails" ? data.emails ?? [] : data.conversations ?? [];
+    if (game.user.isGM && !game.settings.get(MODULE_ID, "seeded")) {
+      await this.seedMessageData();
+      await game.settings.set(MODULE_ID, "seeded", true);
     }
+    this.data.messages = game.settings.get(MODULE_ID, "messages") ?? [];
+    this.data.emails = game.settings.get(MODULE_ID, "emails") ?? [];
+  },
+
+  // 번들된 데모 JSON을 월드 정본으로 이식 (최초 1회, GM만).
+  async seedMessageData() {
+    const load = async (app, key) => {
+      try {
+        const response = await fetch(`modules/${MODULE_ID}/data/${app}.json`);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data[key] ?? [];
+      } catch (error) {
+        debug(`연출 데이터 시드 실패 (${app}): ${error.message}`);
+        return [];
+      }
+    };
+    await game.settings.set(MODULE_ID, "messages", await load("messages", "conversations"));
+    await game.settings.set(MODULE_ID, "emails", await load("emails", "emails"));
   },
 
   directRoomId(userA, userB) {
