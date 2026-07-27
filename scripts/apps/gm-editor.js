@@ -59,14 +59,15 @@ export const gmEditorMethods = {
 
     content.querySelectorAll("[data-gm-tab]").forEach((btn) =>
       btn.addEventListener("click", () => this.renderGmEditor(content, btn.dataset.gmTab)));
-    content.querySelectorAll(".gm-editor-row").forEach((row) =>
-      row.addEventListener("click", (event) => {
-        if (event.target.closest("[data-gm-delete]")) {
-          this.gmEditorDelete(content, kind, row.dataset.gmId);
-          return;
-        }
-        this.renderGmEditorDetail(content, kind, row.dataset.gmId);
-      }));
+    content.querySelectorAll(".gm-editor-row").forEach((row) => {
+      // 삭제는 트래시 요소에 직접 리스너 — FA가 <i>를 svg로 바꿔도 무관.
+      row.querySelector("[data-gm-delete]")?.addEventListener("click", (event) => {
+        event.stopPropagation();
+        this.gmEditorDelete(content, kind, row.dataset.gmId);
+      });
+      row.addEventListener("click", () =>
+        this.renderGmEditorDetail(content, kind, row.dataset.gmId));
+    });
     content.querySelector(".gm-editor-add").addEventListener("click", () =>
       this.gmEditorCreate(content, kind));
     content.querySelector('[data-gm-io="import"]').addEventListener("click", () =>
