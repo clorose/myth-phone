@@ -329,8 +329,8 @@ Hooks.on("getSceneControlButtons", (controls) => {
   const open = () => GmEditorWindow.open();
   controls[MODULE_ID] = {
     name: MODULE_ID,
-    title: "MythPhone",
-    icon: "fa-solid fa-mobile-screen-button",
+    title: "MythPhone GM툴",
+    icon: "fa-solid fa-user-pen",
     order: 100,
     visible: true,
     onChange: () => {},
@@ -338,7 +338,7 @@ Hooks.on("getSceneControlButtons", (controls) => {
     tools: {
       "gm-editor": {
         name: "gm-editor",
-        title: "연출 편집기 열기",
+        title: "GM툴 열기",
         icon: "fa-solid fa-user-pen",
         order: 1,
         button: true,

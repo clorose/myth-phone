@@ -43,7 +43,7 @@ WSL의 `ln -s`로 `/home/...`을 직접 가리키는 링크를 만들면 Windows
 - 로그 내보내기: 방 단위 txt, GM 전용 색상 구분 HTML 통합 로그(단체톡 포함 옵션)
 - 브라우저 앱: GM 등록 사이트 목록 + 주소창 + iframe 뷰어 (Data 폴더의 정적 HTML 서빙)
 - 이메일 앱: 받은편지함·상세 보기, 연출용 데이터(data/emails.json)
-- GM 전용 연출 편집기: 메시지·이메일 정본을 편집하는 독립 창. 좌측 Scene Controls 툴바의 MythPhone 버튼에서 연다(폴백: 콘솔/매크로 `game.modules.get("myth-phone").api.openGmEditor()`)
+- GM 전용 `GM툴`: 메시지·이메일 정본을 편집하는 독립 창. 좌측 Scene Controls 툴바의 `GM툴` 버튼(펜 아이콘)에서 연다(폴백: 콘솔/매크로 `game.modules.get("myth-phone").api.openGmEditor()`)
 - 기본 메시지 앱과 독립된 버블톡 목록·대화 렌더러
 - 전화 앱, 키패드, 최근 통화와 NPC 전화 테스트 장면
 - GM 전용 NPC 전화 발신 화면 (발신 NPC Actor, 대상 플레이어, 장면 선택)

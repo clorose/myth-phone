@@ -11,7 +11,7 @@ export class GmEditorWindow extends ApplicationV2 {
     classes: ["mp-gm-app"],
     tag: "div",
     window: {
-      title: "MythPhone · 연출 편집기",
+      title: "MythPhone · GM툴",
       icon: "fa-solid fa-user-pen",
       resizable: true,
     },
