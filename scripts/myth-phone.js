@@ -342,7 +342,6 @@ Hooks.on("getSceneControlButtons", (controls) => {
         icon: "fa-solid fa-user-pen",
         order: 1,
         button: true,
-        onClick: open,
         onChange: open,
       },
     },
