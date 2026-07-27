@@ -89,7 +89,17 @@ export const gmEditorMethods = {
   },
 
   async gmEditorDelete(content, kind, id) {
-    const list = this.editorData(kind).filter((item) => item.id !== id);
+    const item = this.editorData(kind).find((x) => x.id === id);
+    const label = kind === "messages" ? (item?.name || "이 대화") : (item?.subject || "이 메일");
+    const ok = await foundry.applications.api.DialogV2.confirm({
+      window: { title: "삭제 확인" },
+      content: `<p><b>${esc(label)}</b> 을(를) 삭제할까요?<br>되돌릴 수 없습니다.</p>`,
+      yes: { label: "삭제", icon: "fa-solid fa-trash" },
+      no: { label: "취소" },
+      modal: true
+    });
+    if (!ok) return;
+    const list = this.editorData(kind).filter((x) => x.id !== id);
     await this.saveEditorData(kind, list);
     this.renderGmEditor(content, kind);
   },
