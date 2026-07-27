@@ -15,9 +15,9 @@ export const settingsMethods = {
         <span><strong data-profile-name></strong><small>내 스마트폰</small></span>
       </div>
       <div class="phone-settings-list">
-        <label><span><i class="fa-solid fa-bell"></i> 알림</span><input type="checkbox" checked></label>
-        <label><span><i class="fa-solid fa-volume-high"></i> 메시지 소리</span><input type="checkbox" checked></label>
-        <label><span><i class="fa-solid fa-eye"></i> 미리보기</span><input type="checkbox" checked></label>
+        <label><span><i class="fa-solid fa-bell"></i> 알림</span><input type="checkbox" data-setting="notifEnabled"></label>
+        <label><span><i class="fa-solid fa-volume-high"></i> 메시지 소리</span><input type="checkbox" data-setting="notifSound"></label>
+        <label><span><i class="fa-solid fa-eye"></i> 미리보기</span><input type="checkbox" data-setting="notifPreview"></label>
         <button class="phone-log-export" type="button"><span><i class="fa-solid fa-file-export"></i> 대화 로그 내보내기</span><small><i class="fa-solid fa-chevron-right"></i></small></button>
         <button type="button"><span><i class="fa-solid fa-palette"></i> 화면 테마</span><small>보라색 <i class="fa-solid fa-chevron-right"></i></small></button>
         <button type="button"><span><i class="fa-solid fa-circle-info"></i> 정보</span><small>v0.1.0 <i class="fa-solid fa-chevron-right"></i></small></button>
@@ -28,6 +28,12 @@ export const settingsMethods = {
     content.querySelector("[data-profile-name]").textContent = userName;
     content.querySelector(".phone-log-export").addEventListener("click", () => {
       this.renderLogExport(content);
+    });
+    content.querySelectorAll("[data-setting]").forEach((input) => {
+      input.checked = game.settings.get(MODULE_ID, input.dataset.setting);
+      input.addEventListener("change", () => {
+        game.settings.set(MODULE_ID, input.dataset.setting, input.checked);
+      });
     });
   },
 

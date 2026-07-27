@@ -248,6 +248,25 @@ Hooks.once("init", () => {
     type: Boolean,
     default: false
   });
+  // 알림 설정 (클라이언트별 개인 취향)
+  game.settings.register(MODULE_ID, "notifEnabled", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "notifSound", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true
+  });
+  game.settings.register(MODULE_ID, "notifPreview", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true
+  });
   game.settings.register(MODULE_ID, "debugLog", {
     name: "디버그 로그",
     hint: "소켓 송수신 등 내부 동작을 콘솔과 화면 알림으로 표시합니다.",

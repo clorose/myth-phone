@@ -619,8 +619,14 @@ export const chatMethods = {
     }
 
     if (!isMine) {
-      ui.notifications.info(`버블톡 | ${entry.authorName} 님의 새 메시지`);
-      this.playNotificationTone();
+      if (game.settings.get(MODULE_ID, "notifEnabled")) {
+        const text = (entry.text ?? "").trim() || (entry.image ? "사진" : "");
+        const body = game.settings.get(MODULE_ID, "notifPreview") && text
+          ? `${entry.authorName}: ${text.length > 40 ? text.slice(0, 40) + "…" : text}`
+          : `${entry.authorName} 님의 새 메시지`;
+        ui.notifications.info(`버블톡 | ${body}`);
+      }
+      if (game.settings.get(MODULE_ID, "notifSound")) this.playNotificationTone();
       this.updateAppBadges();
     }
   },
