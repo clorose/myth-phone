@@ -381,6 +381,8 @@ export const chatMethods = {
   },
 
   conversationItem(conversation) {
+    // 배지는 편집기 입력값이 아니라 실제 안읽음(받은 말풍선 수 - 본 수)
+    const unread = PhoneStore.stagedUnread("messages", conversation);
     return `
       <button class="phone-conversation" type="button"
         data-conversation-id="${conversation.id}" data-name="${esc(conversation.name)}">
@@ -391,7 +393,7 @@ export const chatMethods = {
         </span>
         <span class="phone-conversation-meta">
           <time>${esc(formatTime(conversation.listTime))}</time>
-          ${conversation.unread ? `<b>${conversation.unread}</b>` : ""}
+          ${unread ? `<b>${unread}</b>` : ""}
         </span>
       </button>
     `;
@@ -698,6 +700,7 @@ export const chatMethods = {
       timelineTime: "",
       messages: []
     };
+    PhoneStore.markStagedRead(app, conversation); // 열면 읽음 — 목록 배지가 0이 된다
 
     content.closest(".smartphone-app-view")?.classList.add("is-chat-open");
     content.innerHTML = `

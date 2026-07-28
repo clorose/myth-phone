@@ -236,6 +236,34 @@ export const PhoneStore = {
     return ids.map((id) => this.lastReadMap(game.users.get(id))[room.id] ?? 0);
   },
 
+  // ----- 연출(메시지·이메일) 읽음 상태 -----
+  // 유저 플래그에 항목별 "본 받은 개수"를 저장. 배지 = 현재 받은 개수 - 본 개수.
+  // (연출 말풍선엔 타임스탬프가 없어서 시각 대신 개수로 델타를 잡는다)
+
+  stagedReadMap(user = game.user) {
+    return user?.getFlag(MODULE_ID, "stagedRead") ?? {};
+  },
+
+  stagedReceivedCount(kind, item) {
+    return kind === "messages"
+      ? (item.messages ?? []).filter((m) => m.direction !== "sent").length
+      : 1;
+  },
+
+  stagedUnread(kind, item) {
+    const seen = this.stagedReadMap()[item.id] ?? 0;
+    return Math.max(0, this.stagedReceivedCount(kind, item) - seen);
+  },
+
+  async markStagedRead(kind, item) {
+    if (!item?.id) return;
+    const map = { ...this.stagedReadMap() };
+    const count = this.stagedReceivedCount(kind, item);
+    if (map[item.id] === count) return;
+    map[item.id] = count;
+    await game.user.setFlag(MODULE_ID, "stagedRead", map);
+  },
+
   // ----- 통화 기록: 유저 플래그에 영구 저장 -----
 
   loadCallLog() {

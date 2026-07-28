@@ -208,10 +208,11 @@ export const gmEditorMethods = {
     const list = foundry.utils.deepClone(this.editorData(kind));
     const id = foundry.utils.randomID();
     // sentTo: [] = 미발송으로 시작 — 발송 버튼을 누르기 전엔 플레이어 폰에 없다
+    // (안읽음은 편집기 입력값이 아니라 실제 읽음 추적으로 계산하므로 필드를 두지 않는다)
     if (kind === "messages") {
-      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", unread: 0, status: "", timelineTime: "", messages: [], sentTo: [] });
+      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", status: "", timelineTime: "", messages: [], sentTo: [] });
     } else {
-      list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", time: "", unread: true, body: "", sentTo: [] });
+      list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", time: "", body: "", sentTo: [] });
     }
     await this.saveEditorData(kind, list);
     this.renderGmEditorDetail(content, kind, id);
@@ -248,7 +249,6 @@ export const gmEditorMethods = {
           <label class="gm-fld"><span>상대 이름</span><input data-gm-field="name" value="${esc(item.name || "")}"></label>
           <label class="gm-fld"><span>상태 표시</span><input data-gm-field="status" value="${esc(item.status || "")}"></label>
           <label class="gm-fld"><span>목록 시각</span><input data-gm-field="listTime" value="${esc(item.listTime || "")}"></label>
-          <label class="gm-fld"><span>안읽음 수</span><input data-gm-field="unread" type="number" min="0" value="${esc(String(item.unread ?? 0))}"></label>
           <label class="gm-fld gm-full"><span>타임라인 라벨</span><input data-gm-field="timelineTime" value="${esc(item.timelineTime || "")}"></label>
         </div>
         <div class="gm-builder-head"><span>플레이어 폰에 그대로 보이는 화면</span><b>말풍선 ${item.messages?.length || 0}개</b></div>
@@ -276,9 +276,7 @@ export const gmEditorMethods = {
 
     const harvest = () => {
       content.querySelectorAll("[data-gm-field]").forEach((el) => {
-        const key = el.dataset.gmField;
-        if (key === "unread") item.unread = Number(el.value) || 0;
-        else item[key] = el.value;
+        item[el.dataset.gmField] = el.value;
       });
       item.initial = Array.from(item.name || "?")[0] || "?";
       const last = item.messages?.[item.messages.length - 1];
@@ -363,12 +361,6 @@ export const gmEditorMethods = {
           <label class="gm-fld"><span>보낸사람 주소</span><input data-gm-field="from.address" value="${esc(item.from.address || "")}"></label>
           <label class="gm-fld gm-full"><span>제목</span><input data-gm-field="subject" value="${esc(item.subject || "")}"></label>
           <label class="gm-fld"><span>표시 시각</span><input data-gm-field="time" value="${esc(item.time || "")}"></label>
-          <label class="gm-fld"><span>상태</span>
-            <select data-gm-field="unread">
-              <option value="true" ${item.unread ? "selected" : ""}>안읽음</option>
-              <option value="false" ${!item.unread ? "selected" : ""}>읽음</option>
-            </select>
-          </label>
           <label class="gm-fld gm-full"><span>본문</span><textarea data-gm-field="body" rows="9">${esc(item.body || "")}</textarea></label>
         </div>
       </div>
@@ -380,8 +372,7 @@ export const gmEditorMethods = {
     const harvest = () => {
       content.querySelectorAll("[data-gm-field]").forEach((el) => {
         const key = el.dataset.gmField;
-        if (key === "unread") item.unread = el.value === "true";
-        else if (key === "from.name") item.from.name = el.value;
+        if (key === "from.name") item.from.name = el.value;
         else if (key === "from.address") item.from.address = el.value;
         else item[key] = el.value;
       });

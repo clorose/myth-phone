@@ -21,7 +21,7 @@ export const emailMethods = {
         ${emails.length ? emails.map((email) => `
           <button class="phone-email" type="button" data-email-id="${esc(email.id)}"
             data-name="${esc(`${email.from?.name ?? ""} ${email.subject ?? ""}`)}">
-            ${email.unread ? '<i class="phone-email-dot" aria-label="안 읽음"></i>' : "<i></i>"}
+            ${PhoneStore.stagedUnread("emails", email) ? '<i class="phone-email-dot" aria-label="안 읽음"></i>' : "<i></i>"}
             <span class="phone-email-copy">
               <span class="phone-email-top">
                 <strong>${esc(email.from?.name ?? "알 수 없음")}</strong>
@@ -49,7 +49,7 @@ export const emailMethods = {
       this.renderEmail(content);
       return;
     }
-    email.unread = false;
+    PhoneStore.markStagedRead("emails", email); // 열면 읽음 — 목록 점이 사라진다
 
     const paragraphs = String(email.body ?? "")
       .split(/\n{2,}/)
