@@ -2661,6 +2661,18 @@
   font-weight: 600;
 }
 
+.gm-game-date select {
+  width: auto;
+  height: 28px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 4px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 7px;
+  background: white;
+  font-size: 12px;
+}
+
 .gm-game-date input,
 .gm-at-date input {
   width: 52px;

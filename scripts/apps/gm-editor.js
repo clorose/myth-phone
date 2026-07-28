@@ -58,6 +58,10 @@ export const gmEditorMethods = {
         <span>날짜</span>
         <input type="number" min="1" max="12" data-gd="m" value="${gameDate?.m ?? ""}" aria-label="월">월
         <input type="number" min="1" max="31" data-gd="d" value="${gameDate?.d ?? ""}" aria-label="일">일
+        <select data-gd="w" aria-label="요일">
+          ${["월", "화", "수", "목", "금", "토", "일"].map((w) =>
+            `<option value="${w}" ${gameDate?.w === w ? "selected" : ""}>${w}요일</option>`).join("")}
+        </select>
         <button type="button" class="gm-gd-save">적용</button>
         <button type="button" class="gm-gd-clear">초기화</button>
       </div>`;
@@ -102,8 +106,9 @@ export const gmEditorMethods = {
         ui.notifications.warn("MythPhone | 월과 일을 입력하세요.");
         return;
       }
-      await game.settings.set(MODULE_ID, "gameDate", { m, d });
-      ui.notifications.info(`MythPhone | 날짜: ${m}월 ${d}일`);
+      const w = content.querySelector('[data-gd="w"]').value;
+      await game.settings.set(MODULE_ID, "gameDate", { m, d, w });
+      ui.notifications.info(`MythPhone | 날짜: ${m}월 ${d}일 ${w}요일`);
     });
     content.querySelector(".gm-gd-clear").addEventListener("click", async () => {
       await game.settings.set(MODULE_ID, "gameDate", null);
