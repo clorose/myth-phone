@@ -1814,30 +1814,47 @@
   place-items: center;
 }
 
+/* 버튼 자체는 넓은 투명 히트 영역, 보이는 막대는 ::after — 모양은 아이폰 제스처 바 유지 */
 .smartphone-home {
-  display: block;
-  width: 108px;
+  display: grid;
+  width: 160px;
   min-width: 0;
-  max-width: 108px;
-  height: 5px;
+  max-width: 160px;
+  height: 26px;
   min-height: 0;
-  max-height: 5px;
+  max-height: 26px;
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: 13px;
+  place-items: center;
   appearance: none;
-  background: rgba(255, 255, 255, 0.86);
+  background: transparent;
   box-shadow: none;
   line-height: 0;
   cursor: pointer;
 }
 
+.smartphone-home::after {
+  content: "";
+  width: 108px;
+  height: 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.86);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
 .smartphone-home:hover,
 .smartphone-home:focus {
   border: 0;
-  background: white;
+  background: rgba(255, 255, 255, 0.08);
   box-shadow: none;
+}
+
+.smartphone-home:hover::after,
+.smartphone-home:focus::after {
+  background: white;
+  transform: scale(1.12, 1.4);
 }
 
 @media (max-width: 900px) {
