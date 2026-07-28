@@ -583,12 +583,14 @@
   font-weight: 750;
 }
 
-/* 아바타 원 내부 초상화 — 부모(.phone-avatar 등)의 크기·둥글기를 그대로 채운다 */
+/* 아바타 원 내부 초상화 — 부모(.phone-avatar 등)의 크기·둥글기를 그대로 채운다.
+   비정사각 이미지는 중앙이 아니라 위쪽 기준으로 잘라 얼굴이 잡히게 한다 */
 .mp-avatar-img {
   width: 100%;
   height: 100%;
   border-radius: inherit;
   object-fit: cover;
+  object-position: 50% 20%;
 }
 
 .bubbletalk-room-avatar.is-group {
