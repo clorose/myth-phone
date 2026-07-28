@@ -288,14 +288,6 @@ Hooks.once("init", () => {
     type: Boolean,
     default: true
   });
-  game.settings.register(MODULE_ID, "debugLog", {
-    name: "디버그 로그",
-    hint: "소켓 송수신 등 내부 동작을 콘솔과 화면 알림으로 표시합니다.",
-    scope: "client",
-    config: true,
-    type: Boolean,
-    default: false
-  });
 });
 
 Hooks.once("ready", () => {

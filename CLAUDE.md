@@ -21,8 +21,8 @@ lint·테스트 러너 없음.
   - `module.json`·모듈 ID·심볼릭 링크 변경 → Foundry 재시작 필요
 - **모듈 링크**(소스는 WSL, Windows Foundry가 심볼릭 링크로 접근):
   재생성은 관리자 권한으로 `tools/link-myth-phone-module.ps1`. 상세는 `README.md`.
-- **디버그**: 모듈 설정 "디버그 로그"(`debugLog`)를 켜면 소켓 송수신 등이 콘솔·화면 알림으로 나온다
-  (`utils.js`의 `debug()`).
+- **디버그**: 개발 중에는 `log.js`의 `debug()`가 **항상 콘솔에 출력**된다(게이트 없음).
+  **정식 출시 때는 설정으로 끄는 게 아니라 debug 호출을 전부 제거한다** — 사용자 지시.
 
 ## 아키텍처 (전체 그림)
 
@@ -46,9 +46,9 @@ lint·테스트 러너 없음.
   `send(type, payload)` / `on(type, handler)`.
 - **`scripts/utils.js`** — `escapeHTML`(코드에선 `esc`로 import), `formatTime`, `formatDuration`,
   `userDisplayName`.
-- **`scripts/log.js` — 로깅 단일 제어점.** `debug`(개발용, `debugLog` 설정 게이트·기본 off → 배포 시
-  자동 조용) / `warn` / `error`(실제 실패용, 항상 출력). **코드 어디서도 `console.*`를 직접 호출하지 말고
-  반드시 이 함수를 쓴다** — 로깅 정책이 이 파일 하나에 모인다.
+- **`scripts/log.js` — 로깅 단일 제어점.** `debug`(개발 중 상시 콘솔 출력, **출시 시 호출 전부 제거**) /
+  `warn` / `error`(실제 실패용, 출시 후에도 유지). **코드 어디서도 `console.*`를 직접 호출하지 말고
+  반드시 이 함수를 쓴다** — 로깅 정책이 이 파일 하나에 모이고, 출시 전 제거도 여기서 추적한다.
 
 ## 반드시 알아야 할 설계 결정
 
