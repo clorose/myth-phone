@@ -1831,6 +1831,39 @@
   place-items: center;
 }
 
+/* 앱이 열리면 하단 내비 줄에 벽지색 띠가 남지 않게 앱 배경을 이어준다.
+   밝은 앱 배경 위에선 iOS처럼 인디케이터를 어두운 색으로 뒤집는다 */
+.smartphone-frame:has(.smartphone-app-view:not([hidden])) .smartphone-navigation {
+  background: #f4f4f8;
+}
+
+.smartphone-frame:has(.smartphone-app-view:not([hidden])) .smartphone-home {
+  background: rgba(21, 21, 26, 0.75);
+}
+
+.smartphone-frame:has(.smartphone-app-view:not([hidden])) .smartphone-home:hover,
+.smartphone-frame:has(.smartphone-app-view:not([hidden])) .smartphone-home:focus,
+.smartphone-frame:has(.smartphone-app-view:not([hidden])) .smartphone-home:active {
+  background: #15151a;
+  box-shadow: 0 0 8px 1px rgba(0, 0, 0, 0.18);
+}
+
+/* 통화 화면은 어두운 배경 — 어두운 띠 + 밝은 인디케이터 유지 */
+.smartphone-frame:has(.smartphone-app-view.is-call-screen:not([hidden])) .smartphone-navigation {
+  background: #111720;
+}
+
+.smartphone-frame:has(.smartphone-app-view.is-call-screen:not([hidden])) .smartphone-home {
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.smartphone-frame:has(.smartphone-app-view.is-call-screen:not([hidden])) .smartphone-home:hover,
+.smartphone-frame:has(.smartphone-app-view.is-call-screen:not([hidden])) .smartphone-home:focus,
+.smartphone-frame:has(.smartphone-app-view.is-call-screen:not([hidden])) .smartphone-home:active {
+  background: white;
+  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.75);
+}
+
 .smartphone-home {
   display: block;
   width: 108px;
