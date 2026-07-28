@@ -13,6 +13,12 @@
   display: none !important;
 }
 
+/* 마우스 클릭 후 포커스 테두리가 계속 남지 않게 — 키보드 포커스(:focus-visible)만 표시 */
+#fvtt-smartphone :focus:not(:focus-visible),
+.mp-gm-app :focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* 폰 목록 행 공통 리셋 — 행이 <button>이라 Foundry 기본 버튼 높이·라인하이트에 눌리면
    내용이 행 밖으로 넘쳐 아래 행과 겹친다. 같은 버그가 반복돼 공통 규칙으로 통합.
    개별 규칙보다 앞에 둬서 각 행의 min-height 재정의(버블톡 64/68px 등)가 이긴다.
