@@ -145,7 +145,9 @@ export const gmEditorMethods = {
             .map((input) => input.value)
       },
       no: { label: "취소" },
-      modal: true
+      modal: true,
+      // X로 닫아도 reject 대신 null — 취소와 동일하게 처리 (기본값에 기대지 않고 명시)
+      rejectClose: false
     });
     if (!Array.isArray(picked)) return;
 
