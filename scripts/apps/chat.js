@@ -278,6 +278,18 @@ export const chatMethods = {
     return null;
   },
 
+  // 접속 표시도 렌더 시점에 계산 — 방 생성 때 저장한 값은 이후 로그인/아웃을 못 따라간다
+  roomOnline(room) {
+    if (room.type === "group") return false;
+    if (room.npcActorId) return true; // NPC 명의 방은 항상 접속 중 연출
+    return game.users.get(room.otherUserId)?.active ?? false;
+  },
+
+  roomStatus(room) {
+    if (room.npcActorId) return room.status;
+    return this.roomOnline(room) ? "접속 중" : "오프라인";
+  },
+
   bubbleTalkFriendItems() {
     const users = game.users.filter((user) => user.id !== game.user.id);
     if (!users.length) {
@@ -320,7 +332,7 @@ export const chatMethods = {
             }</span>`
           : `<span class="bubbletalk-room-avatar ${isGroup ? "is-group" : ""}">
               ${this.avatarHTML(isGroup ? null : this.roomImg(conversation), conversation.initial)}
-              ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
+              ${this.roomOnline(conversation) ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
               ${isGroup ? `<i class="fa-solid fa-user-group" aria-hidden="true"></i>` : ""}
             </span>`}
         <span class="bubbletalk-room-copy">
@@ -404,11 +416,11 @@ export const chatMethods = {
         </button>
         <span class="bubbletalk-chat-avatar">
           ${this.avatarHTML(isGroup ? null : this.roomImg(conversation), conversation.initial)}
-          ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
+          ${this.roomOnline(conversation) ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
         </span>
         <div class="bubbletalk-chat-title">
           <strong>${esc(conversation.name)}</strong>
-          <small>${isGroup ? `${conversation.participantCount ?? ""}명 참여` : conversation.status}</small>
+          <small>${isGroup ? `${conversation.participantCount ?? ""}명 참여` : this.roomStatus(conversation)}</small>
         </div>
         <button type="button" aria-label="통화"><i class="fa-solid fa-phone"></i></button>
         <button type="button" aria-label="대화 검색"><i class="fa-solid fa-magnifying-glass"></i></button>
