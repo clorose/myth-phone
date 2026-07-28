@@ -28,6 +28,17 @@ export function formatDuration(totalSeconds) {
 }
 
 // 폰에서 유저를 지칭할 때는 배정된 캐릭터 이름을 쓰고, 없으면 계정 이름으로 폴백.
+// Actor 초상화 경로. 기본 아이콘(mystery-man)이거나 없으면 null → 글자 동그라미 폴백.
+export function portraitImg(actor) {
+  const img = actor?.img;
+  return img && !img.endsWith("mystery-man.svg") ? img : null;
+}
+
+// 유저의 배정 캐릭터 초상화 (버블톡 표시 이름과 같은 소스).
+export function userPortraitImg(user) {
+  return portraitImg(user?.character);
+}
+
 export function userDisplayName(user) {
   return user?.character?.name ?? user?.name ?? "알 수 없음";
 }

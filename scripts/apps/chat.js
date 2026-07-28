@@ -1,4 +1,4 @@
-import { escapeHTML as esc, formatTime, userDisplayName } from "../utils.js";
+import { escapeHTML as esc, formatTime, userDisplayName, portraitImg, userPortraitImg } from "../utils.js";
 import { debug, warn } from "../log.js";
 import { PhoneStore } from "../store.js";
 
@@ -264,6 +264,20 @@ export const chatMethods = {
     });
   },
 
+  // 아바타 원 내부: 초상화가 있으면 이미지, 없으면 글자
+  avatarHTML(img, initial) {
+    return img
+      ? `<img class="mp-avatar-img" src="${esc(img)}" alt="">`
+      : `<span>${esc(initial ?? "?")}</span>`;
+  },
+
+  // 방 아바타에 쓸 캐릭터 초상화 — 렌더 시점에 계산해 초상화 변경이 바로 반영되게 한다
+  roomImg(room) {
+    if (room.npcActorId) return portraitImg(game.actors.get(room.npcActorId));
+    if (room.otherUserId) return userPortraitImg(game.users.get(room.otherUserId));
+    return null;
+  },
+
   bubbleTalkFriendItems() {
     const users = game.users.filter((user) => user.id !== game.user.id);
     if (!users.length) {
@@ -274,7 +288,7 @@ export const chatMethods = {
       <button class="bubbletalk-friend" type="button"
         data-name="${esc(userDisplayName(user))}"
         data-conversation-id="${PhoneStore.directRoomId(game.user.id, user.id)}">
-        <span class="phone-avatar">${esc(Array.from(userDisplayName(user))[0].toLocaleUpperCase())}</span>
+        <span class="phone-avatar">${this.avatarHTML(userPortraitImg(user), Array.from(userDisplayName(user))[0].toLocaleUpperCase())}</span>
         <span class="bubbletalk-friend-copy">
           <strong>${esc(userDisplayName(user))}</strong>
           <small>${user.isGM ? "GM" : user.active ? "접속 중" : "오프라인"}</small>
@@ -305,7 +319,7 @@ export const chatMethods = {
                 `<b style="background:${member.color}">${member.initial}</b>`).join("")
             }</span>`
           : `<span class="bubbletalk-room-avatar ${isGroup ? "is-group" : ""}">
-              <span>${esc(conversation.initial)}</span>
+              ${this.avatarHTML(isGroup ? null : this.roomImg(conversation), conversation.initial)}
               ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
               ${isGroup ? `<i class="fa-solid fa-user-group" aria-hidden="true"></i>` : ""}
             </span>`}
@@ -389,7 +403,7 @@ export const chatMethods = {
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <span class="bubbletalk-chat-avatar">
-          <span>${esc(conversation.initial)}</span>
+          ${this.avatarHTML(isGroup ? null : this.roomImg(conversation), conversation.initial)}
           ${!isGroup && conversation.online ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}
         </span>
         <div class="bubbletalk-chat-title">
@@ -475,7 +489,7 @@ export const chatMethods = {
 
     return `
       <div class="bubbletalk-message is-received${contClass}">
-        <span class="bubbletalk-message-avatar${first ? "" : " is-ghost"}">${first ? esc(senderName.charAt(0)) : ""}</span>
+        <span class="bubbletalk-message-avatar${first ? "" : " is-ghost"}">${first ? this.avatarHTML(message.avatar, senderName.charAt(0)) : ""}</span>
         <div>
           ${first ? `<strong>${esc(senderName)}</strong>` : ""}
           <p${bubbleClass}>${bubbleBody}</p>
@@ -535,6 +549,10 @@ export const chatMethods = {
       sender: entry.authorName,
       text: entry.text,
       image: entry.image ?? null,
+      // 말풍선 아바타: 화자 Actor 초상화 → 없으면 작성 유저의 배정 캐릭터 초상화
+      avatar: entry.actorId
+        ? portraitImg(game.actors.get(entry.actorId))
+        : userPortraitImg(game.users.get(entry.authorId)),
       time: entry.time
     };
     if (room && view.direction === "sent") {
@@ -650,7 +668,7 @@ export const chatMethods = {
   bubbleTalkTyping(conversation) {
     return `
       <div class="bubbletalk-message is-received">
-        <span class="bubbletalk-message-avatar">${conversation.initial ?? "?"}</span>
+        <span class="bubbletalk-message-avatar">${this.avatarHTML(this.roomImg(conversation), conversation.initial)}</span>
         <div>
           <span class="bubbletalk-typing" role="status" aria-label="입력 중"><i></i><i></i><i></i></span>
         </div>

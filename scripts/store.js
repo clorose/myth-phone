@@ -183,6 +183,8 @@ export const PhoneStore = {
       authorId,
       // NPC 명의 메시지는 speaker.alias(Actor 이름)를 표시 이름으로 쓴다
       authorName: message.speaker?.alias || message.author?.name || "알 수 없음",
+      // 화자 Actor id — 말풍선 아바타에 캐릭터 초상화를 쓰기 위해 보관
+      actorId: message.speaker?.actor ?? null,
       text: message.content,
       image: flag.image ?? null,
       time: message.timestamp
