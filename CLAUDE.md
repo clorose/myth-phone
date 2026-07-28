@@ -21,8 +21,8 @@ lint·테스트 러너 없음.
   - `module.json`·모듈 ID·심볼릭 링크 변경 → Foundry 재시작 필요
 - **모듈 링크**(소스는 WSL, Windows Foundry가 심볼릭 링크로 접근):
   재생성은 관리자 권한으로 `tools/link-myth-phone-module.ps1`. 상세는 `README.md`.
-- **디버그**: `log.js` 맨 위 `const DEBUG` **코드 상수로만** 켜고 끈다(기본 true, 게임 설정 아님).
-  **정식 출시 때는 스위치를 끄는 게 아니라 debug 호출을 전부 제거한다** — 사용자 지시.
+- **디버그**: `log.js` 맨 위 `const DEBUG` **코드 상수로만** 켜고 끈다(게임 설정 아님 — 유저가 못 켬).
+  개발 중 true, **정식 출시 때 false로 바꾼다**(코드 삭제 불필요) — 사용자 지시.
 
 ## 아키텍처 (전체 그림)
 
