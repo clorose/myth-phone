@@ -2,7 +2,7 @@
 // 렌더러는 여기서 데이터를 읽고, 데이터 변경은 emit으로 구독자에게 알린다.
 // (버블톡 실채팅 전환 시 ChatMessage 훅이 이 스토어를 갱신하는 구조를 전제)
 
-import { userDisplayName } from "./utils.js";
+import { userDisplayName, formatTime } from "./utils.js";
 import { debug } from "./log.js";
 
 const MODULE_ID = "myth-phone";
@@ -277,8 +277,9 @@ export const PhoneStore = {
   stagedTimeLabel(item, { detail = false } = {}) {
     const at = item.at;
     if (!at?.m || !at?.d) {
-      // 구 데이터 폴백: 옛 자유 텍스트를 그대로 (시점을 새로 지정하면 대체됨)
-      return detail ? (item.timelineTime || item.time || "") : (item.listTime || item.time || "");
+      // 구 데이터 폴백: 옛 자유 텍스트는 그대로, 숫자 타임스탬프는 시각으로 포맷
+      const legacy = detail ? (item.timelineTime || item.time || "") : (item.listTime || item.time || "");
+      return formatTime(legacy);
     }
     const dateText = `${at.m}월 ${at.d}일`;
     if (detail) return at.t ? `${dateText} ${at.t}` : dateText;
