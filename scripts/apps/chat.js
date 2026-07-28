@@ -682,7 +682,7 @@ export const chatMethods = {
       <div class="phone-chat-log">
         ${conversation.timelineTime ? `<time>${esc(formatTime(conversation.timelineTime))}</time>` : ""}
         ${conversation.messages.map((message) =>
-          `<p class="is-${message.direction}">${message.text}</p>`
+          `<p class="is-${message.direction}">${esc(message.text)}</p>`
         ).join("")}
       </div>
       <form class="phone-composer">
