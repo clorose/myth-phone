@@ -1850,9 +1850,12 @@
   cursor: pointer;
 }
 
+/* :active·outline까지 덮어야 코어 버튼의 붉은 눌림 효과가 안 샌다 */
 .smartphone-home:hover,
-.smartphone-home:focus {
+.smartphone-home:focus,
+.smartphone-home:active {
   border: 0;
+  outline: 0;
   background: white;
   box-shadow: none;
 }
