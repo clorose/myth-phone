@@ -58,8 +58,8 @@ class SmartphoneShell {
 
           <main class="smartphone-screen">
             <div class="smartphone-wallpaper">
-              <p class="smartphone-date"></p>
               <h1 class="smartphone-hero-clock">00:00</h1>
+              <p class="smartphone-date"></p>
             </div>
 
             <div class="smartphone-app-grid">

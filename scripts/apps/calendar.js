@@ -28,7 +28,11 @@ export const calendarMethods = {
     const cells = Array(startDow).fill(null);
     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
+    // 선택 포커스(보기용, 클라이언트 로컬) — 처음 열면 오늘이 선택돼 있다
+    this.calSelected ??= { ...today };
     const isToday = (d) => y === today.y && m === today.m && d === today.d;
+    const isSelected = (d) =>
+      y === this.calSelected.y && m === this.calSelected.m && d === this.calSelected.d;
 
     content.innerHTML = `
       <header class="phone-page-header phone-cal-header">
@@ -37,6 +41,7 @@ export const calendarMethods = {
         <span class="phone-cal-nav">
           <button type="button" data-cal-nav="-1" aria-label="이전 달"><i class="fa-solid fa-chevron-left"></i></button>
           <button type="button" data-cal-nav="1" aria-label="다음 달"><i class="fa-solid fa-chevron-right"></i></button>
+          <button type="button" class="phone-cal-today" aria-label="오늘로">${today.d}</button>
         </span>
       </header>
       <div class="phone-cal-grid" role="grid">
@@ -51,9 +56,10 @@ export const calendarMethods = {
             dow === 0 ? "is-sun" : "",
             dow === 6 ? "is-sat" : "",
             holiday ? "is-holiday" : "",
-            isToday(d) ? "is-today" : ""
+            isToday(d) ? "is-today" : "",
+            isSelected(d) ? "is-selected" : ""
           ].filter(Boolean).join(" ");
-          return `<span class="${cls}"${holiday ? ` data-tooltip="${holiday}"` : ""}><b>${d}</b></span>`;
+          return `<span class="${cls}" data-cal-day="${d}"${holiday ? ` data-tooltip="${holiday}"` : ""}><b>${d}</b></span>`;
         }).join("")}
       </div>
       ${gameDate ? "" : `<p class="phone-cal-note">게임 내 날짜 미설정 — 현실 날짜 기준</p>`}
@@ -64,5 +70,16 @@ export const calendarMethods = {
         const moved = new Date(y, m - 1 + Number(btn.dataset.calNav), 1);
         this.renderCalendar(content, moved.getFullYear(), moved.getMonth() + 1);
       }));
+    // 날짜 탭 → 선택 포커스 이동 (보기용 — 게임 날짜와 무관)
+    content.querySelectorAll("[data-cal-day]").forEach((cell) =>
+      cell.addEventListener("click", () => {
+        this.calSelected = { y, m, d: Number(cell.dataset.calDay) };
+        this.renderCalendar(content, y, m);
+      }));
+    // 오늘 버튼 → 오늘 달로 복귀 + 오늘 선택
+    content.querySelector(".phone-cal-today").addEventListener("click", () => {
+      this.calSelected = { ...today };
+      this.renderCalendar(content, today.y, today.m);
+    });
   },
 };
