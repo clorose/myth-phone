@@ -59,6 +59,7 @@ export const gmEditorMethods = {
         <input type="number" min="1" max="12" data-gd="m" value="${gameDate?.m ?? ""}" aria-label="월">월
         <input type="number" min="1" max="31" data-gd="d" value="${gameDate?.d ?? ""}" aria-label="일">일
         <button type="button" class="gm-gd-save">적용</button>
+        <button type="button" class="gm-gd-clear">초기화</button>
       </div>`;
       })()}
       <div class="gm-editor-list">
@@ -97,11 +98,18 @@ export const gmEditorMethods = {
     content.querySelector(".gm-gd-save").addEventListener("click", async () => {
       const m = Number(content.querySelector('[data-gd="m"]').value);
       const d = Number(content.querySelector('[data-gd="d"]').value);
-      // 둘 다 비우고 적용하면 해제 → 폰 시계는 현실 시간으로 돌아간다
-      await game.settings.set(MODULE_ID, "gameDate", m && d ? { m, d } : null);
-      ui.notifications.info(m && d
-        ? `MythPhone | 날짜: ${m}월 ${d}일`
-        : "MythPhone | 날짜 해제 (현실 시간 표시)");
+      if (!m || !d) {
+        ui.notifications.warn("MythPhone | 월과 일을 입력하세요.");
+        return;
+      }
+      await game.settings.set(MODULE_ID, "gameDate", { m, d });
+      ui.notifications.info(`MythPhone | 날짜: ${m}월 ${d}일`);
+    });
+    content.querySelector(".gm-gd-clear").addEventListener("click", async () => {
+      await game.settings.set(MODULE_ID, "gameDate", null);
+      content.querySelector('[data-gd="m"]').value = "";
+      content.querySelector('[data-gd="d"]').value = "";
+      ui.notifications.info("MythPhone | 날짜 초기화 (현실 날짜 표시)");
     });
     content.querySelector('[data-gm-io="import"]').addEventListener("click", () =>
       this.renderGmEditorImport(content, kind));

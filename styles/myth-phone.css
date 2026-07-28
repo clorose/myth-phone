@@ -2675,7 +2675,8 @@
   text-align: center;
 }
 
-.gm-game-date .gm-gd-save {
+.gm-game-date .gm-gd-save,
+.gm-game-date .gm-gd-clear {
   height: 28px;
   min-height: 0;
   margin: 0 0 0 6px;
@@ -2691,9 +2692,14 @@
   cursor: pointer;
 }
 
-.gm-game-date .gm-gd-save:hover {
+.gm-game-date .gm-gd-save:hover,
+.gm-game-date .gm-gd-clear:hover {
   border-color: var(--phone-accent);
   color: var(--phone-accent);
+}
+
+.gm-game-date .gm-gd-clear {
+  margin-left: 0;
 }
 
 .gm-at-date {

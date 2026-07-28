@@ -192,22 +192,15 @@ class SmartphoneShell {
 
   static updateClock(wrapper) {
     if (!wrapper) return;
-    // 게임 내 날짜가 설정돼 있으면 폰 시계는 현실 시간 대신 게임 내 날짜를 보여준다
-    const gameDate = game.settings.get(MODULE_ID, "gameDate");
-    if (gameDate?.m && gameDate?.d) {
-      const text = `${gameDate.m}월 ${gameDate.d}일`;
-      wrapper.querySelector(".smartphone-clock").textContent = text;
-      wrapper.querySelector(".smartphone-hero-clock").textContent = text;
-      wrapper.querySelector(".smartphone-date").textContent = "";
-      return;
-    }
     const now = new Date();
-    wrapper.querySelector(".smartphone-clock").textContent =
-      new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
-    wrapper.querySelector(".smartphone-hero-clock").textContent =
-      new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
-    wrapper.querySelector(".smartphone-date").textContent =
-      new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(now);
+    const clock = new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
+    wrapper.querySelector(".smartphone-clock").textContent = clock;
+    wrapper.querySelector(".smartphone-hero-clock").textContent = clock;
+    // 시계는 시계로 남기고, 잠금화면 날짜 줄만 게임 내 날짜로 바꿔치기한다
+    const gameDate = game.settings.get(MODULE_ID, "gameDate");
+    wrapper.querySelector(".smartphone-date").textContent = gameDate?.m && gameDate?.d
+      ? `${gameDate.m}월 ${gameDate.d}일`
+      : new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(now);
   }
 
   static close() {
