@@ -191,6 +191,16 @@ class SmartphoneShell {
   }
 
   static updateClock(wrapper) {
+    if (!wrapper) return;
+    // 게임 내 날짜가 설정돼 있으면 폰 시계는 현실 시간 대신 게임 내 날짜를 보여준다
+    const gameDate = game.settings.get(MODULE_ID, "gameDate");
+    if (gameDate?.m && gameDate?.d) {
+      const text = `${gameDate.m}월 ${gameDate.d}일`;
+      wrapper.querySelector(".smartphone-clock").textContent = text;
+      wrapper.querySelector(".smartphone-hero-clock").textContent = text;
+      wrapper.querySelector(".smartphone-date").textContent = "";
+      return;
+    }
     const now = new Date();
     wrapper.querySelector(".smartphone-clock").textContent =
       new Intl.DateTimeFormat("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false }).format(now);
@@ -253,6 +263,14 @@ Hooks.once("init", () => {
     type: Boolean,
     default: false
   });
+  // 게임 내 오늘 날짜 { m, d }. null이면 미설정 — 폰 시계는 현실 시간 폴백,
+  // 연출 시점 라벨은 오늘/어제 판정 없이 날짜만 표시한다.
+  game.settings.register(MODULE_ID, "gameDate", {
+    scope: "world",
+    config: false,
+    type: Object,
+    default: null
+  });
   // 알림 설정 (클라이언트별 개인 취향)
   game.settings.register(MODULE_ID, "notifEnabled", {
     scope: "client",
@@ -300,6 +318,13 @@ Hooks.once("ready", () => {
     SmartphoneShell.refreshOpenChatLog();
   });
   Hooks.on("updateSetting", (setting) => {
+    if (setting.key === `${MODULE_ID}.gameDate`) {
+      // 날짜가 넘어가면 시계와 열린 목록의 오늘/어제 라벨을 즉시 갱신
+      SmartphoneShell.updateClock(SmartphoneShell.wrapper);
+      SmartphoneShell.refreshOpenPlayerData();
+      GmEditorWindow.refreshIfOpen();
+      return;
+    }
     const kind = ["messages", "emails"].find((key) => setting.key === `${MODULE_ID}.${key}`);
     if (!kind) return;
     PhoneStore.data[kind] = game.settings.get(MODULE_ID, kind) ?? [];

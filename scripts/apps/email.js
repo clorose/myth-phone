@@ -1,4 +1,4 @@
-import { escapeHTML as esc, formatTime } from "../utils.js";
+import { escapeHTML as esc } from "../utils.js";
 import { PhoneStore } from "../store.js";
 
 const MODULE_ID = "myth-phone";
@@ -25,7 +25,7 @@ export const emailMethods = {
             <span class="phone-email-copy">
               <span class="phone-email-top">
                 <strong>${esc(email.from?.name ?? "알 수 없음")}</strong>
-                <time>${esc(formatTime(email.time))}</time>
+                <time>${esc(PhoneStore.stagedTimeLabel(email))}</time>
               </span>
               <b>${esc(email.subject ?? "(제목 없음)")}</b>
               <small>${esc(email.preview ?? "")}</small>
@@ -68,7 +68,7 @@ export const emailMethods = {
           <span class="phone-avatar">${esc(Array.from(email.from?.name ?? "?")[0])}</span>
           <span>
             <strong>${esc(email.from?.name ?? "알 수 없음")}</strong>
-            <small>${esc(email.from?.address ?? "")} · ${esc(formatTime(email.time))}</small>
+            <small>${esc(email.from?.address ?? "")} · ${esc(PhoneStore.stagedTimeLabel(email, { detail: true }))}</small>
           </span>
         </div>
         <div class="phone-email-body">

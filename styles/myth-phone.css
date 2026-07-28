@@ -2644,6 +2644,64 @@
   background: var(--phone-accent);
 }
 
+/* 게임 내 오늘 설정 줄 (GM툴 목록 상단) */
+.gm-game-date {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid var(--phone-divider);
+  color: var(--phone-secondary);
+  font-size: 12px;
+}
+
+.gm-game-date span {
+  margin-right: 4px;
+  font-weight: 600;
+}
+
+.gm-game-date input,
+.gm-at-date input {
+  width: 52px;
+  height: 28px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 6px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 7px;
+  background: white;
+  font-size: 12px;
+  text-align: center;
+}
+
+.gm-game-date .gm-gd-save {
+  height: 28px;
+  min-height: 0;
+  margin: 0 0 0 6px;
+  padding: 0 12px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 7px;
+  color: var(--phone-secondary);
+  background: white;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: normal;
+  cursor: pointer;
+}
+
+.gm-game-date .gm-gd-save:hover {
+  border-color: var(--phone-accent);
+  color: var(--phone-accent);
+}
+
+.gm-at-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .gm-editor-list {
   flex: 1;
   overflow: auto;

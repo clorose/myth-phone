@@ -392,7 +392,7 @@ export const chatMethods = {
           <small>${esc(conversation.preview)}</small>
         </span>
         <span class="phone-conversation-meta">
-          <time>${esc(formatTime(conversation.listTime))}</time>
+          <time>${esc(PhoneStore.stagedTimeLabel(conversation))}</time>
           ${unread ? `<b>${unread}</b>` : ""}
         </span>
       </button>
@@ -712,7 +712,10 @@ export const chatMethods = {
         <button type="button" aria-label="통화"><i class="fa-solid fa-phone"></i></button>
       </header>
       <div class="phone-chat-log">
-        ${conversation.timelineTime ? `<time>${esc(formatTime(conversation.timelineTime))}</time>` : ""}
+        ${(() => {
+          const label = PhoneStore.stagedTimeLabel(conversation, { detail: true });
+          return label ? `<time>${esc(label)}</time>` : "";
+        })()}
         ${conversation.messages.map((message) =>
           `<p class="is-${message.direction}">${esc(message.text)}</p>`
         ).join("")}

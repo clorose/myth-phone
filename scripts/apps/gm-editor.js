@@ -51,6 +51,16 @@ export const gmEditorMethods = {
         <button class="gm-editor-tab ${kind === "messages" ? "is-active" : ""}" type="button" data-gm-tab="messages">메시지</button>
         <button class="gm-editor-tab ${kind === "emails" ? "is-active" : ""}" type="button" data-gm-tab="emails">이메일</button>
       </div>
+      ${(() => {
+        const gameDate = PhoneStore.gameDate();
+        return `
+      <div class="gm-game-date">
+        <span>날짜</span>
+        <input type="number" min="1" max="12" data-gd="m" value="${gameDate?.m ?? ""}" aria-label="월">월
+        <input type="number" min="1" max="31" data-gd="d" value="${gameDate?.d ?? ""}" aria-label="일">일
+        <button type="button" class="gm-gd-save">적용</button>
+      </div>`;
+      })()}
       <div class="gm-editor-list">
         ${rows || `<div class="bubbletalk-empty"><i class="fa-solid fa-feather-pointed"></i><p>항목이 없습니다. +로 추가하세요.</p></div>`}
       </div>
@@ -84,6 +94,15 @@ export const gmEditorMethods = {
     });
     content.querySelector(".gm-editor-add").addEventListener("click", () =>
       this.gmEditorCreate(content, kind));
+    content.querySelector(".gm-gd-save").addEventListener("click", async () => {
+      const m = Number(content.querySelector('[data-gd="m"]').value);
+      const d = Number(content.querySelector('[data-gd="d"]').value);
+      // 둘 다 비우고 적용하면 해제 → 폰 시계는 현실 시간으로 돌아간다
+      await game.settings.set(MODULE_ID, "gameDate", m && d ? { m, d } : null);
+      ui.notifications.info(m && d
+        ? `MythPhone | 날짜: ${m}월 ${d}일`
+        : "MythPhone | 날짜 해제 (현실 시간 표시)");
+    });
     content.querySelector('[data-gm-io="import"]').addEventListener("click", () =>
       this.renderGmEditorImport(content, kind));
     content.querySelector('[data-gm-io="export"]').addEventListener("click", () =>
@@ -208,11 +227,11 @@ export const gmEditorMethods = {
     const list = foundry.utils.deepClone(this.editorData(kind));
     const id = foundry.utils.randomID();
     // sentTo: [] = 미발송으로 시작 — 발송 버튼을 누르기 전엔 플레이어 폰에 없다
-    // (안읽음은 편집기 입력값이 아니라 실제 읽음 추적으로 계산하므로 필드를 두지 않는다)
+    // (안읽음·시점 라벨은 편집기 입력값이 아니라 실제 상태·게임 내 날짜로 계산)
     if (kind === "messages") {
-      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", timelineTime: "", messages: [], sentTo: [] });
+      list.push({ id, name: "새 대화", initial: "?", preview: "", messages: [], sentTo: [] });
     } else {
-      list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", time: "", body: "", sentTo: [] });
+      list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", body: "", sentTo: [] });
     }
     await this.saveEditorData(kind, list);
     this.renderGmEditorDetail(content, kind, id);
@@ -247,8 +266,7 @@ export const gmEditorMethods = {
       <div class="gm-editor-scroll">
         <div class="gm-meta">
           <label class="gm-fld"><span>상대 이름</span><input data-gm-field="name" value="${esc(item.name || "")}"></label>
-          <label class="gm-fld"><span>목록 시각</span><input data-gm-field="listTime" value="${esc(item.listTime || "")}"></label>
-          <label class="gm-fld gm-full"><span>타임라인 라벨</span><input data-gm-field="timelineTime" value="${esc(item.timelineTime || "")}"></label>
+          ${this.gmAtFields(item)}
         </div>
         <div class="gm-builder-head"><span>플레이어 폰에 그대로 보이는 화면</span><b>말풍선 ${item.messages?.length || 0}개</b></div>
         <div class="gm-canvas">
@@ -277,6 +295,7 @@ export const gmEditorMethods = {
       content.querySelectorAll("[data-gm-field]").forEach((el) => {
         item[el.dataset.gmField] = el.value;
       });
+      this.harvestAt(content, item);
       item.initial = Array.from(item.name || "?")[0] || "?";
       const last = item.messages?.[item.messages.length - 1];
       item.preview = last ? (last.text || "") : "";
@@ -345,6 +364,27 @@ export const gmEditorMethods = {
       }));
   },
 
+  // 항목의 게임 내 시점(마지막 메시지/수신 시점) 입력 — 월·일 + 선택 시각 텍스트.
+  // 표시 라벨(오늘/어제/날짜)은 게임 내 오늘과 비교해 자동 계산되므로 여기선 시점만 적는다.
+  gmAtFields(item) {
+    return `
+          <label class="gm-fld gm-at"><span>날짜</span>
+            <span class="gm-at-date">
+              <input type="number" min="1" max="12" data-gm-at="m" value="${item.at?.m ?? ""}" aria-label="월">월
+              <input type="number" min="1" max="31" data-gm-at="d" value="${item.at?.d ?? ""}" aria-label="일">일
+            </span>
+          </label>
+          <label class="gm-fld"><span>시각 (선택)</span><input data-gm-at="t" value="${esc(item.at?.t || "")}" placeholder="예: 오후 6:35"></label>`;
+  },
+
+  harvestAt(content, item) {
+    const m = Number(content.querySelector('[data-gm-at="m"]')?.value);
+    const d = Number(content.querySelector('[data-gm-at="d"]')?.value);
+    const t = content.querySelector('[data-gm-at="t"]')?.value.trim() ?? "";
+    if (m && d) item.at = { m, d, t };
+    else delete item.at; // 비우면 구 데이터 폴백(옛 자유 텍스트)으로
+  },
+
   renderGmEmailDetail(content, list, item) {
     content.closest(".smartphone-app-view")?.classList.remove("is-chat-open");
     item.from = item.from || { name: "", address: "" };
@@ -359,7 +399,7 @@ export const gmEditorMethods = {
           <label class="gm-fld"><span>보낸사람 이름</span><input data-gm-field="from.name" value="${esc(item.from.name || "")}"></label>
           <label class="gm-fld"><span>보낸사람 주소</span><input data-gm-field="from.address" value="${esc(item.from.address || "")}"></label>
           <label class="gm-fld gm-full"><span>제목</span><input data-gm-field="subject" value="${esc(item.subject || "")}"></label>
-          <label class="gm-fld"><span>표시 시각</span><input data-gm-field="time" value="${esc(item.time || "")}"></label>
+          ${this.gmAtFields(item)}
           <label class="gm-fld gm-full"><span>본문</span><textarea data-gm-field="body" rows="9">${esc(item.body || "")}</textarea></label>
         </div>
       </div>
@@ -375,6 +415,7 @@ export const gmEditorMethods = {
         else if (key === "from.address") item.from.address = el.value;
         else item[key] = el.value;
       });
+      this.harvestAt(content, item);
       const firstLine = String(item.body || "").split("\n").find((line) => line.trim()) || "";
       item.preview = firstLine.trim().slice(0, 60);
     };

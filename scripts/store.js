@@ -255,6 +255,29 @@ export const PhoneStore = {
     return Math.max(0, this.stagedReceivedCount(kind, item) - seen);
   },
 
+  // ----- 연출 시점 라벨 -----
+  // 항목의 시점은 item.at = { m, d, t? } 하나. 표시 라벨은 게임 내 오늘(gameDate)과
+  // 비교해 자동 계산한다 — 날짜가 넘어가면 "오늘"이 "어제"→"7월 3일"로 저절로 늙는다.
+
+  gameDate() {
+    return game.settings.get(MODULE_ID, "gameDate") ?? null;
+  },
+
+  stagedTimeLabel(item, { detail = false } = {}) {
+    const at = item.at;
+    if (!at?.m || !at?.d) {
+      // 구 데이터 폴백: 옛 자유 텍스트를 그대로 (시점을 새로 지정하면 대체됨)
+      return detail ? (item.timelineTime || item.time || "") : (item.listTime || item.time || "");
+    }
+    const dateText = `${at.m}월 ${at.d}일`;
+    if (detail) return at.t ? `${dateText} ${at.t}` : dateText;
+    const today = this.gameDate();
+    if (today?.m === at.m && today?.d === at.d) return at.t || "오늘";
+    // 어제 판정은 같은 달 안에서만 — 게임 달력이 없어 월 경계는 계산하지 않는다
+    if (today && today.m === at.m && today.d === at.d + 1) return "어제";
+    return dateText;
+  },
+
   async markStagedRead(kind, item) {
     if (!item?.id) return;
     const map = { ...this.stagedReadMap() };
