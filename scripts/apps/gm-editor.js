@@ -130,13 +130,32 @@ export const gmEditorMethods = {
         <input type="checkbox" name="target" value="${user.id}" ${current.includes(user.id) ? "checked" : ""}>
         <span>${esc(userDisplayName(user))}${user.active ? "" : " (오프라인)"}</span>
       </label>`).join("");
+    const allRow = `
+      <label class="mp-send-target mp-send-all">
+        <input type="checkbox" data-mp-all>
+        <span><b>전체 선택</b></span>
+      </label>`;
+
+    // DialogV2.confirm은 인스턴스를 안 주므로 렌더 훅으로 전체 선택 토글을 묶는다
+    Hooks.once("renderDialogV2", (app, html) => {
+      const master = html.querySelector("[data-mp-all]");
+      if (!master) return;
+      const targets = () => Array.from(html.querySelectorAll('input[name="target"]'));
+      const sync = () => { master.checked = targets().every((input) => input.checked); };
+      master.addEventListener("change", () =>
+        targets().forEach((input) => { input.checked = master.checked; }));
+      html.addEventListener("change", (event) => {
+        if (event.target.name === "target") sync();
+      });
+      sync();
+    });
 
     const picked = await foundry.applications.api.DialogV2.confirm({
       window: { title: "발송 대상" },
       content: `
         <p class="mp-send-title"><b>${esc(label)}</b> 을(를) 받을 사람을 고르세요.<br>
         <small>체크를 빼면 그 사람 폰에서 회수됩니다.</small></p>
-        <div class="mp-send-targets">${rows}</div>`,
+        <div class="mp-send-targets">${allRow}${rows}</div>`,
       yes: {
         label: "발송",
         icon: "fa-solid fa-paper-plane",
