@@ -352,13 +352,6 @@ Hooks.on("getSceneControlButtons", (controls) => {
     icon: "fa-solid fa-user-pen",
     order: 100,
     button: true,
-    onChange: (event, active) => {
-      // 클릭이 이 버튼을 "선택된 도구"로 남겨 주황 표시가 지속되는 문제 방지:
-      // 창만 열고 선택 도구는 기본(select)으로 되돌린다.
-      GmEditorWindow.open();
-      if (ui.controls?.control?.name === "tokens" && ui.controls.tool?.name === "myth-phone-gm") {
-        ui.controls.activate({ tool: "select" });
-      }
-    },
+    onChange: () => GmEditorWindow.open(),
   };
 });
