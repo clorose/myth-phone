@@ -68,7 +68,8 @@ export const emailMethods = {
           <span class="phone-avatar">${esc(Array.from(email.from?.name ?? "?")[0])}</span>
           <span>
             <strong>${esc(email.from?.name ?? "알 수 없음")}</strong>
-            <small>${esc(email.from?.address ?? "")} · ${esc(PhoneStore.stagedTimeLabel(email, { detail: true }))}</small>
+            <small>${[email.from?.address, PhoneStore.stagedTimeLabel(email, { detail: true })]
+              .filter(Boolean).map((part) => esc(part)).join(" · ")}</small>
           </span>
         </div>
         <div class="phone-email-body">
