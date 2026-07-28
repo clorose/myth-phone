@@ -2683,8 +2683,8 @@
 .phone-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  padding: 12px 14px;
+  gap: 0 2px;
+  padding: 12px 14px 4px;
 }
 
 .phone-cal-dow {
@@ -2697,10 +2697,24 @@
 
 .phone-cal-day {
   display: grid;
+  position: relative;
   place-items: center;
   aspect-ratio: 1;
+  border-top: 1px solid rgba(0, 0, 0, 0.08); /* 애플식 주 구분 가로줄 */
   color: #1c1d22;
   font-size: 13px;
+}
+
+.phone-cal-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--phone-accent);
+  transform: translateX(-50%);
 }
 
 .phone-cal-day b {
@@ -2727,6 +2741,11 @@
   background: var(--phone-accent);
   color: white;
   font-weight: 700;
+}
+
+/* 오늘이 공휴일이면 원을 빨간색으로 — 보라 원이 빨간날을 가리지 않게 */
+.phone-cal-day.is-holiday.is-today b {
+  background: #d64545;
 }
 
 .phone-cal-day[data-cal-day] {
@@ -2766,6 +2785,103 @@
   color: var(--phone-secondary);
   font-size: 11px;
   text-align: center;
+}
+
+/* 선택한 날의 일정 패널 */
+.phone-cal-detail {
+  margin: 4px 14px 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: white;
+}
+
+.phone-cal-detail h3 {
+  margin: 0 0 6px;
+  border: 0;
+  color: var(--phone-label);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.phone-cal-ev {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0;
+  color: var(--phone-label);
+  font-size: 12.5px;
+}
+
+.phone-cal-ev > i {
+  color: var(--phone-accent);
+  font-size: 6px;
+}
+
+.phone-cal-ev.is-holiday > i {
+  color: #d64545;
+  font-size: 11px;
+}
+
+.phone-cal-ev.is-none {
+  color: var(--phone-secondary);
+}
+
+.phone-cal-ev button {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0 0 0 auto;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--phone-secondary);
+  background: transparent;
+  box-shadow: none;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.phone-cal-ev button:hover {
+  color: #c25a5a;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.phone-cal-add {
+  display: grid;
+  grid-template-columns: 1fr 30px;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.phone-cal-add input {
+  height: 30px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 9px;
+  color: var(--phone-label);
+  background: #f4f4f8;
+  font-size: 12px;
+}
+
+.phone-cal-add button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  color: white;
+  background: var(--phone-accent);
+  box-shadow: none;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 /* 항목 시점 입력(월/일)과 날짜 탭 */

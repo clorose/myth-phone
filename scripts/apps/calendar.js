@@ -1,4 +1,7 @@
 import { PhoneStore } from "../store.js";
+import { escapeHTML as esc } from "../utils.js";
+
+const MODULE_ID = "myth-phone";
 
 // 양력 고정 공휴일. 음력 공휴일(설날·추석·부처님오신날)과 대체공휴일은
 // 음력 변환이 필요해 표시하지 않는다 — 필요해지면 별도 확장.
@@ -34,6 +37,14 @@ export const calendarMethods = {
     const isSelected = (d) =>
       y === this.calSelected.y && m === this.calSelected.m && d === this.calSelected.d;
 
+    // 일정: 월드 공유 데이터 { id, m, d, title } — 연도 무관(매년 반복)
+    const allEvents = game.settings.get(MODULE_ID, "calendarEvents") ?? [];
+    const eventsFor = (em, ed) => allEvents.filter((ev) => ev.m === em && ev.d === ed);
+
+    const sel = this.calSelected;
+    const selHoliday = FIXED_HOLIDAYS[`${sel.m}-${sel.d}`];
+    const selEvents = eventsFor(sel.m, sel.d);
+
     content.innerHTML = `
       <header class="phone-page-header phone-cal-header">
         <p>달력</p>
@@ -59,8 +70,24 @@ export const calendarMethods = {
             isToday(d) ? "is-today" : "",
             isSelected(d) ? "is-selected" : ""
           ].filter(Boolean).join(" ");
-          return `<span class="${cls}" data-cal-day="${d}"${holiday ? ` data-tooltip="${holiday}"` : ""}><b>${d}</b></span>`;
+          return `<span class="${cls}" data-cal-day="${d}"${holiday ? ` data-tooltip="${holiday}"` : ""}>
+            <b>${d}</b>${eventsFor(m, d).length ? '<i class="phone-cal-dot"></i>' : ""}
+          </span>`;
         }).join("")}
+      </div>
+      <div class="phone-cal-detail">
+        <h3>${sel.m}월 ${sel.d}일</h3>
+        ${selHoliday ? `<p class="phone-cal-ev is-holiday"><i class="fa-solid fa-flag"></i>${esc(selHoliday)}</p>` : ""}
+        ${selEvents.map((ev) => `
+          <p class="phone-cal-ev"><i class="fa-solid fa-circle"></i>${esc(ev.title)}
+            ${game.user.isGM ? `<button type="button" data-ev-del="${esc(ev.id)}" aria-label="삭제"><i class="fa-solid fa-xmark"></i></button>` : ""}
+          </p>`).join("")}
+        ${!selHoliday && !selEvents.length ? `<p class="phone-cal-ev is-none">일정 없음</p>` : ""}
+        ${game.user.isGM ? `
+        <form class="phone-cal-add">
+          <input name="title" maxlength="30" placeholder="일정 추가 (전체 공개)" autocomplete="off">
+          <button type="submit" aria-label="추가"><i class="fa-solid fa-plus"></i></button>
+        </form>` : ""}
       </div>
       ${gameDate ? "" : `<p class="phone-cal-note">게임 내 날짜 미설정 — 현실 날짜 기준</p>`}
     `;
@@ -81,5 +108,21 @@ export const calendarMethods = {
       this.calSelected = { ...today };
       this.renderCalendar(content, today.y, today.m);
     });
+
+    // GM: 선택한 날에 일정 추가/삭제 (월드 설정 — 전 클라이언트 공유)
+    content.querySelector(".phone-cal-add")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const title = event.currentTarget.elements.title.value.trim();
+      if (!title) return;
+      const list = [...allEvents, { id: foundry.utils.randomID(), m: sel.m, d: sel.d, title }];
+      await game.settings.set(MODULE_ID, "calendarEvents", list);
+      this.renderCalendar(content, y, m);
+    });
+    content.querySelectorAll("[data-ev-del]").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const list = allEvents.filter((ev) => ev.id !== btn.dataset.evDel);
+        await game.settings.set(MODULE_ID, "calendarEvents", list);
+        this.renderCalendar(content, y, m);
+      }));
   },
 };
