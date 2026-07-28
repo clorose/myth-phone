@@ -1,5 +1,6 @@
-import { escapeHTML as esc } from "../utils.js";
+import { escapeHTML as esc, userDisplayName } from "../utils.js";
 import { PhoneStore } from "../store.js";
+import { PhoneSocket } from "../socket.js";
 
 const MODULE_ID = "myth-phone";
 
@@ -29,12 +30,14 @@ export const gmEditorMethods = {
           conv.id,
           conv.initial || Array.from(conv.name || "?")[0],
           conv.name || "(이름 없음)",
-          conv.preview || "")).join("")
+          conv.preview || "",
+          conv.sentTo)).join("")
       : list.map((mail) => this.gmEditorRow(
           mail.id,
           Array.from(mail.from?.name || "?")[0],
           mail.from?.name || "(보낸사람 없음)",
-          mail.subject || "(제목 없음)")).join("");
+          mail.subject || "(제목 없음)",
+          mail.sentTo)).join("");
 
     content.innerHTML = `
       <header class="phone-page-header gm-editor-header">
@@ -62,11 +65,18 @@ export const gmEditorMethods = {
     content.querySelectorAll(".gm-editor-row").forEach((row) => {
       row.addEventListener("click", (event) => {
         // 클릭은 항상 버튼(row)에 잡힌다(자식 아이콘으로 포인터가 안 감) — 로그로 확인.
-        // 그래서 요소 판별 대신 클릭 좌표가 트래시 박스 안이면 삭제, 아니면 편집.
-        const box = row.querySelector("[data-gm-delete]")?.getBoundingClientRect();
-        if (box && event.clientX >= box.left && event.clientX <= box.right
-                && event.clientY >= box.top && event.clientY <= box.bottom) {
+        // 그래서 요소 판별 대신 클릭 좌표가 각 아이콘 박스 안인지로 동작을 가른다.
+        const hit = (selector) => {
+          const box = row.querySelector(selector)?.getBoundingClientRect();
+          return box && event.clientX >= box.left && event.clientX <= box.right
+              && event.clientY >= box.top && event.clientY <= box.bottom;
+        };
+        if (hit("[data-gm-delete]")) {
           this.gmEditorDelete(content, kind, row.dataset.gmId);
+          return;
+        }
+        if (hit("[data-gm-send]")) {
+          this.gmEditorSend(content, kind, row.dataset.gmId);
           return;
         }
         this.renderGmEditorDetail(content, kind, row.dataset.gmId);
@@ -80,7 +90,13 @@ export const gmEditorMethods = {
       this.renderGmEditorExport(content, kind));
   },
 
-  gmEditorRow(id, initial, title, subtitle) {
+  gmEditorRow(id, initial, title, subtitle, sentTo) {
+    // sentTo 없음 = 구 데이터(전체 공개), [] = 미발송(아무도 못 봄), [ids] = 발송됨
+    const send = sentTo === undefined
+      ? { cls: "", badge: "", tip: "전체 공개 (대상 미지정)" }
+      : sentTo.length
+        ? { cls: "", badge: `<b>${sentTo.length}</b>`, tip: `${sentTo.length}명에게 발송됨` }
+        : { cls: " is-unsent", badge: "", tip: "미발송 — 아직 아무도 못 봅니다" };
     return `
       <button class="gm-editor-row" type="button" data-gm-id="${esc(id)}">
         <span class="phone-avatar">${esc(initial || "?")}</span>
@@ -88,9 +104,67 @@ export const gmEditorMethods = {
           <strong>${esc(title)}</strong>
           <small>${esc(subtitle)}</small>
         </span>
+        <span class="gm-editor-row-send${send.cls}" data-gm-send aria-label="발송" data-tooltip="${esc(send.tip)}"><i class="fa-solid fa-paper-plane"></i>${send.badge}</span>
         <span class="gm-editor-row-del" data-gm-delete aria-label="삭제"><i class="fa-solid fa-trash"></i></span>
       </button>
     `;
+  },
+
+  // 발송: 대상 플레이어를 골라 그 순간 공개한다. 새로 추가된 대상에게만 소켓 알림.
+  // 체크를 빼면 그 사람 폰에서 회수된다(정본의 sentTo에서 제거).
+  async gmEditorSend(content, kind, id) {
+    const list = foundry.utils.deepClone(this.editorData(kind));
+    const item = list.find((x) => x.id === id);
+    if (!item) return;
+    const players = game.users.filter((user) => !user.isGM);
+    if (!players.length) {
+      ui.notifications.warn("MythPhone | 발송할 플레이어가 없습니다.");
+      return;
+    }
+
+    // 구 데이터(sentTo 없음)는 전체 공개 상태였으므로 전원 체크로 시작
+    const current = item.sentTo ?? players.map((user) => user.id);
+    const label = kind === "messages" ? (item.name || "(이름 없음)") : (item.subject || "(제목 없음)");
+    const rows = players.map((user) => `
+      <label class="mp-send-target">
+        <input type="checkbox" name="target" value="${user.id}" ${current.includes(user.id) ? "checked" : ""}>
+        <span>${esc(userDisplayName(user))}${user.active ? "" : " (오프라인)"}</span>
+      </label>`).join("");
+
+    const picked = await foundry.applications.api.DialogV2.confirm({
+      window: { title: "발송 대상" },
+      content: `
+        <p class="mp-send-title"><b>${esc(label)}</b> 을(를) 받을 사람을 고르세요.<br>
+        <small>체크를 빼면 그 사람 폰에서 회수됩니다.</small></p>
+        <div class="mp-send-targets">${rows}</div>`,
+      yes: {
+        label: "발송",
+        icon: "fa-solid fa-paper-plane",
+        callback: (event, button) =>
+          Array.from(button.form.querySelectorAll('input[name="target"]:checked'))
+            .map((input) => input.value)
+      },
+      no: { label: "취소" },
+      modal: true
+    });
+    if (!Array.isArray(picked)) return;
+
+    const fresh = picked.filter((userId) => !current.includes(userId));
+    item.sentTo = picked;
+    await this.saveEditorData(kind, list);
+    // 데이터 자체는 updateSetting 훅으로 전 클라이언트에 동기화된다.
+    // 소켓은 "지금 도착했다"는 알림 전용 — 새 수신자에게만 보낸다.
+    if (fresh.length) {
+      PhoneSocket.send("staged-send", {
+        kind,
+        itemId: id,
+        targets: fresh,
+        title: kind === "messages" ? (item.name || "") : (item.from?.name || ""),
+        preview: kind === "messages" ? (item.preview || "") : (item.subject || "")
+      });
+    }
+    ui.notifications.info(`MythPhone | ${picked.length}명에게 공개${fresh.length ? ` (신규 ${fresh.length}명 알림)` : ""}`);
+    this.renderGmEditor(content, kind);
   },
 
   async gmEditorDelete(content, kind, id) {
@@ -112,10 +186,11 @@ export const gmEditorMethods = {
   async gmEditorCreate(content, kind) {
     const list = foundry.utils.deepClone(this.editorData(kind));
     const id = foundry.utils.randomID();
+    // sentTo: [] = 미발송으로 시작 — 발송 버튼을 누르기 전엔 플레이어 폰에 없다
     if (kind === "messages") {
-      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", unread: 0, status: "", timelineTime: "", messages: [] });
+      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", unread: 0, status: "", timelineTime: "", messages: [], sentTo: [] });
     } else {
-      list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", time: "", unread: true, body: "" });
+      list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", time: "", unread: true, body: "", sentTo: [] });
     }
     await this.saveEditorData(kind, list);
     this.renderGmEditorDetail(content, kind, id);

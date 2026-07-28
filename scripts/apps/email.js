@@ -1,11 +1,12 @@
 import { escapeHTML as esc, formatTime } from "../utils.js";
+import { PhoneStore } from "../store.js";
 
 const MODULE_ID = "myth-phone";
 
 export const emailMethods = {
   renderEmail(content) {
     content.closest(".smartphone-app-view")?.classList.remove("is-chat-open");
-    const emails = this.messageData.emails;
+    const emails = PhoneStore.visibleList("emails");
 
     content.innerHTML = `
       <header class="phone-page-header">
@@ -43,7 +44,7 @@ export const emailMethods = {
   },
 
   renderEmailDetail(content, emailId) {
-    const email = this.messageData.emails.find((item) => item.id === emailId);
+    const email = PhoneStore.visibleList("emails").find((item) => item.id === emailId);
     if (!email) {
       this.renderEmail(content);
       return;

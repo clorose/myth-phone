@@ -289,6 +289,7 @@ Hooks.once("ready", () => {
     if (!game.user.isGM) return;
     ui.notifications.info(`MythPhone | ${payload.targetName}: ${payload.callerName} 전화 ${payload.result}`);
   });
+  PhoneSocket.on("staged-send", (payload) => SmartphoneShell.onStagedDelivery(payload));
 
   Hooks.on("createChatMessage", (message) => PhoneStore.addChatMessage(message));
   PhoneStore.on("bubbletalk-message", ({ room, entry }) =>

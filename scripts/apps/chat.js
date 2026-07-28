@@ -18,7 +18,7 @@ export const chatMethods = {
         <input type="search" placeholder="대화 검색" aria-label="대화 검색">
       </label>
       <div class="phone-conversation-list">
-        ${this.messageData.messages.map((conversation) =>
+        ${PhoneStore.visibleList("messages").map((conversation) =>
           this.conversationItem(conversation)
         ).join("")}
       </div>
@@ -632,6 +632,21 @@ export const chatMethods = {
     }
   },
 
+  // GM이 연출 메시지·이메일을 발송한 순간의 도착 알림 (대상자에게만).
+  // 데이터 자체는 updateSetting 훅으로 동기화되므로 여기선 알림만 담당한다.
+  onStagedDelivery(payload) {
+    if (game.user.isGM || !payload.targets?.includes(game.user.id)) return;
+    const label = payload.kind === "emails" ? "이메일" : "메시지";
+    if (game.settings.get(MODULE_ID, "notifEnabled")) {
+      const preview = (payload.preview ?? "").trim();
+      const body = game.settings.get(MODULE_ID, "notifPreview") && preview
+        ? `${payload.title}: ${preview.length > 40 ? preview.slice(0, 40) + "…" : preview}`
+        : `새 ${label} 도착`;
+      ui.notifications.info(`${label} | ${body}`);
+    }
+    if (game.settings.get(MODULE_ID, "notifSound")) this.playNotificationTone();
+  },
+
   bubbleTalkTyping(conversation) {
     return `
       <div class="bubbletalk-message is-received">
@@ -644,7 +659,7 @@ export const chatMethods = {
   },
 
   renderChat(content, conversationId, app = "messages") {
-    const conversation = this.messageData[app].find(
+    const conversation = PhoneStore.visibleList(app).find(
       (item) => item.id === conversationId
     ) ?? {
       name: "알 수 없음",

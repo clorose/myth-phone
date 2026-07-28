@@ -2592,7 +2592,7 @@
 .gm-editor-row {
   display: grid;
   width: 100%;
-  grid-template-columns: 44px 1fr 26px;
+  grid-template-columns: 44px 1fr 26px 26px;
   align-items: center;
   gap: 11px;
   height: auto;
@@ -2653,6 +2653,74 @@
 
 .gm-editor-row:hover .gm-editor-row-del {
   opacity: 1;
+}
+
+.gm-editor-row-send {
+  display: grid;
+  position: relative;
+  place-items: center;
+  align-self: stretch;
+  color: var(--phone-accent);
+  font-size: 13px;
+  opacity: 0.35;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* 아이콘 글리프는 통과시켜 클릭이 항상 발송 span에 잡히게 (row-del과 동일 규칙) */
+.gm-editor-row-send > i {
+  pointer-events: none;
+}
+
+.gm-editor-row:hover .gm-editor-row-send {
+  opacity: 1;
+}
+
+.gm-editor-row-send.is-unsent {
+  color: var(--phone-secondary);
+}
+
+.gm-editor-row-send b {
+  position: absolute;
+  top: 4px;
+  right: -5px;
+  min-width: 14px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--phone-accent);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* 발송 대상 선택 다이얼로그 (DialogV2 내부 — 폰 밖이라 mp- 접두사로 스코프) */
+.mp-send-title small {
+  color: var(--color-text-secondary, #7a7a85);
+}
+
+.mp-send-targets {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  margin-top: 8px;
+  overflow: auto;
+}
+
+.mp-send-target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.mp-send-target:hover {
+  background: rgba(0, 0, 0, 0.07);
 }
 
 .gm-editor-io {

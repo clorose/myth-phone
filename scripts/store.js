@@ -64,6 +64,16 @@ export const PhoneStore = {
     await game.settings.set(MODULE_ID, "emails", await load("emails", "emails"));
   },
 
+  // ----- 연출 데이터 공개 판정 -----
+  // sentTo 없음(구 데이터) = 전체 공개, 배열 = 발송받은 사용자만. GM은 항상 전부 본다.
+  stagedVisible(item, user = game.user) {
+    return user.isGM || item.sentTo === undefined || item.sentTo.includes(user.id);
+  },
+
+  visibleList(kind) {
+    return (this.data[kind] ?? []).filter((item) => this.stagedVisible(item));
+  },
+
   directRoomId(userA, userB) {
     return `direct:${[userA, userB].sort().join(":")}`;
   },
