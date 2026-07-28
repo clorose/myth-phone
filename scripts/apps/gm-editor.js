@@ -51,6 +51,9 @@ export const gmEditorMethods = {
         <button class="gm-editor-tab ${kind === "messages" ? "is-active" : ""}" type="button" data-gm-tab="messages">메시지</button>
         <button class="gm-editor-tab ${kind === "emails" ? "is-active" : ""}" type="button" data-gm-tab="emails">이메일</button>
       </div>
+      <div class="gm-editor-list">
+        ${rows || `<div class="bubbletalk-empty"><i class="fa-solid fa-feather-pointed"></i><p>항목이 없습니다. +로 추가하세요.</p></div>`}
+      </div>
       ${(() => {
         const gameDate = PhoneStore.gameDate();
         return `
@@ -66,9 +69,6 @@ export const gmEditorMethods = {
         <button type="button" class="gm-gd-clear">초기화</button>
       </div>`;
       })()}
-      <div class="gm-editor-list">
-        ${rows || `<div class="bubbletalk-empty"><i class="fa-solid fa-feather-pointed"></i><p>항목이 없습니다. +로 추가하세요.</p></div>`}
-      </div>
       <div class="gm-editor-io">
         <button type="button" data-gm-io="import"><i class="fa-solid fa-file-import"></i> 가져오기</button>
         <button type="button" data-gm-io="export"><i class="fa-solid fa-file-export"></i> 내보내기</button>

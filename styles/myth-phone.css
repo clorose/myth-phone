@@ -2644,14 +2644,14 @@
   background: var(--phone-accent);
 }
 
-/* 게임 내 오늘 설정 줄 (GM툴 목록 상단) */
+/* 날짜 설정 줄 — 하단 도구 영역(가져오기/내보내기 위) */
 .gm-game-date {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
   gap: 5px;
-  padding: 6px 14px 8px;
-  border-bottom: 1px solid var(--phone-divider);
+  padding: 8px 14px 0;
+  border-top: 1px solid var(--phone-divider);
   color: var(--phone-secondary);
   font-size: 12px;
 }
@@ -2669,8 +2669,10 @@
   padding: 0 4px;
   border: 1px solid var(--phone-divider);
   border-radius: 7px;
+  color: var(--phone-label);
   background: white;
   font-size: 12px;
+  font-weight: 600;
 }
 
 .gm-game-date input,
@@ -2682,8 +2684,10 @@
   padding: 0 6px;
   border: 1px solid var(--phone-divider);
   border-radius: 7px;
+  color: var(--phone-label);
   background: white;
   font-size: 12px;
+  font-weight: 600;
   text-align: center;
 }
 
