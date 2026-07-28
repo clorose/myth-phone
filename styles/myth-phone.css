@@ -322,6 +322,7 @@
 .smartphone-app-icon.browser { background: linear-gradient(150deg, #70c8ff, #246dd4); }
 .smartphone-app-icon.camera { background: linear-gradient(150deg, #eff0f4, #aeb2bc); color: #31333a; }
 .smartphone-app-icon.music { background: linear-gradient(150deg, #ff6e91, #dc315c); }
+.smartphone-app-icon.calendar { background: linear-gradient(150deg, #ff7a66, #d92f2f); }
 .smartphone-app-icon.gm-editor { background: linear-gradient(150deg, #8e83f0, #5a48c8); }
 
 .smartphone-app-view[data-app="bubbletalk"] {
@@ -2642,6 +2643,96 @@
   color: white;
   border-color: transparent;
   background: var(--phone-accent);
+}
+
+/* ----- 달력 앱 ----- */
+
+.phone-cal-header {
+  position: relative;
+}
+
+.phone-cal-nav {
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.phone-cal-nav button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: var(--phone-accent);
+  background: rgba(var(--phone-accent-rgb), 0.1);
+  box-shadow: none;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.phone-cal-nav button:hover {
+  background: rgba(var(--phone-accent-rgb), 0.2);
+}
+
+.phone-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  padding: 12px 14px;
+}
+
+.phone-cal-dow {
+  padding: 4px 0;
+  color: var(--phone-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.phone-cal-day {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: #1c1d22;
+  font-size: 13px;
+}
+
+.phone-cal-day b {
+  display: grid;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 500;
+}
+
+.phone-cal-dow.is-sun,
+.phone-cal-day.is-sun {
+  color: #d64545;
+}
+
+.phone-cal-dow.is-sat,
+.phone-cal-day.is-sat {
+  color: #3d6fd0;
+}
+
+.phone-cal-day.is-today b {
+  background: var(--phone-accent);
+  color: white;
+  font-weight: 700;
+}
+
+.phone-cal-note {
+  margin: 4px 14px;
+  color: var(--phone-secondary);
+  font-size: 11px;
+  text-align: center;
 }
 
 /* 항목 시점 입력(월/일)과 날짜 탭 */

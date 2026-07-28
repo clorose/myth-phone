@@ -8,6 +8,7 @@ import { chatMethods } from "./apps/chat.js";
 import { emailMethods } from "./apps/email.js";
 import { browserMethods } from "./apps/browser.js";
 import { contactsMethods } from "./apps/contacts.js";
+import { calendarMethods } from "./apps/calendar.js";
 import { notesMethods } from "./apps/notes.js";
 import { settingsMethods } from "./apps/settings.js";
 
@@ -80,6 +81,10 @@ class SmartphoneShell {
               <button type="button" data-app="contacts">
                 <span class="smartphone-app-icon contacts"><i class="fa-solid fa-address-book"></i></span>
                 <span>연락처</span>
+              </button>
+              <button type="button" data-app="calendar">
+                <span class="smartphone-app-icon calendar"><i class="fa-solid fa-calendar-days"></i></span>
+                <span>달력</span>
               </button>
               <button type="button" data-app="notes">
                 <span class="smartphone-app-icon notes"><i class="fa-solid fa-note-sticky"></i></span>
@@ -172,6 +177,7 @@ class SmartphoneShell {
       browser: () => this.renderBrowser(content),
       email: () => this.renderEmail(content),
       contacts: () => this.renderContacts(content),
+      calendar: () => this.renderCalendar(content),
       notes: () => this.renderNotes(content),
       settings: () => this.renderSettings(content)
     };
@@ -215,7 +221,7 @@ class SmartphoneShell {
     if (!this.wrapper) return;
     const view = this.wrapper.querySelector(".smartphone-app-view");
     if (!view || view.hidden) return;
-    if (!["messages", "email"].includes(view.dataset.app)) return;
+    if (!["messages", "email", "calendar"].includes(view.dataset.app)) return;
     if (view.classList.contains("is-chat-open")) return;
     this.renderApp(this.wrapper, view.dataset.app);
   }
@@ -226,6 +232,7 @@ Object.assign(SmartphoneShell, chatMethods);
 Object.assign(SmartphoneShell, emailMethods);
 Object.assign(SmartphoneShell, browserMethods);
 Object.assign(SmartphoneShell, contactsMethods);
+Object.assign(SmartphoneShell, calendarMethods);
 Object.assign(SmartphoneShell, notesMethods);
 Object.assign(SmartphoneShell, settingsMethods);
 
