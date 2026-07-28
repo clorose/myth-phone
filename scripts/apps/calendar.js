@@ -1,5 +1,18 @@
 import { PhoneStore } from "../store.js";
 
+// 양력 고정 공휴일. 음력 공휴일(설날·추석·부처님오신날)과 대체공휴일은
+// 음력 변환이 필요해 표시하지 않는다 — 필요해지면 별도 확장.
+const FIXED_HOLIDAYS = {
+  "1-1": "신정",
+  "3-1": "삼일절",
+  "5-5": "어린이날",
+  "6-6": "현충일",
+  "8-15": "광복절",
+  "10-3": "개천절",
+  "10-9": "한글날",
+  "12-25": "성탄절"
+};
+
 export const calendarMethods = {
   // 게임 내 날짜(gameDate) 기준 월 달력. 미설정이면 시계와 같은 규칙으로 현실 날짜 폴백.
   renderCalendar(content, year = null, month = null) {
@@ -32,13 +45,15 @@ export const calendarMethods = {
         ${cells.map((d, i) => {
           if (!d) return `<span class="phone-cal-day is-empty"></span>`;
           const dow = i % 7;
+          const holiday = FIXED_HOLIDAYS[`${m}-${d}`];
           const cls = [
             "phone-cal-day",
             dow === 0 ? "is-sun" : "",
             dow === 6 ? "is-sat" : "",
+            holiday ? "is-holiday" : "",
             isToday(d) ? "is-today" : ""
           ].filter(Boolean).join(" ");
-          return `<span class="${cls}"><b>${d}</b></span>`;
+          return `<span class="${cls}"${holiday ? ` data-tooltip="${holiday}"` : ""}><b>${d}</b></span>`;
         }).join("")}
       </div>
       ${gameDate ? "" : `<p class="phone-cal-note">게임 내 날짜 미설정 — 현실 날짜 기준</p>`}

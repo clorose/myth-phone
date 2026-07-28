@@ -2713,7 +2713,8 @@
 }
 
 .phone-cal-dow.is-sun,
-.phone-cal-day.is-sun {
+.phone-cal-day.is-sun,
+.phone-cal-day.is-holiday {
   color: #d64545;
 }
 
