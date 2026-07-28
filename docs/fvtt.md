@@ -38,6 +38,8 @@ ChatMessage.create({
 |---|---|
 | 브라우저 사이트 목록 (`sites`) | `game.settings` world |
 | 연출용 메시지·이메일 (`messages`/`emails`), 시드 여부(`seeded`) | `game.settings` world |
+| 게임 내 날짜 (`gameDate`) | `game.settings` world |
+| 연출 읽음 상태(`stagedRead`), 달력 개인 일정(`calendarEvents`) | `user.setFlag("myth-phone", …)` |
 | 알림 토글(`notifEnabled`/`notifSound`/`notifPreview`) | `game.settings` client |
 | 읽은 시각(`lastRead`), 통화 기록 | `user.setFlag("myth-phone", …)` (전원 읽기 가능 → 읽음 계산) |
 | 캐릭터 연락처 번호 | `actor.setFlag("myth-phone", …)` |

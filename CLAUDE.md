@@ -33,7 +33,7 @@ lint·테스트 러너 없음.
   앱 전환은 `renderApp(wrapper, app)` → `view.dataset.app = app` → `renderers[app]()` 맵으로 라우팅.
   상태는 static 필드(열린 방 id, 타이머 등)와 `.smartphone-app-view`의 상태 클래스(`is-chat-open`,
   `is-call-screen`)로 관리한다. 파일 하단에서 각 앱 모듈을 `Object.assign(SmartphoneShell, xMethods)`로 붙인다.
-- **`scripts/apps/*.js` — 앱별 렌더러** (`phone`·`chat`·`email`·`browser`·`contacts`·`notes`·`settings`·`gm-editor`).
+- **`scripts/apps/*.js` — 앱별 렌더러** (`phone`·`chat`·`email`·`browser`·`contacts`·`calendar`·`notes`·`settings`·`gm-editor`).
   각 파일이 메서드 묶음(`chatMethods` 등)을 export하고 셸에 `Object.assign`으로 얹힌다 — 그래서 메서드 본문의
   `this.*`는 실행 시 `SmartphoneShell`로 해석되고, **어느 모듈에 있든 모든 메서드가 같은 클래스에 붙어**
   앱 간 헬퍼 호출이 그대로 된다. 렌더는 **템플릿 문자열을 `innerHTML`에 넣고 수동으로 리스너를 붙이는 방식**
@@ -75,11 +75,10 @@ lint·테스트 러너 없음.
 
 ## 저장 위치 요약
 
-- **월드 설정**(`scope: world`): GM이 만드는 공유 정본 — 연출용 메시지·이메일, 브라우저 사이트, 시드 플래그.
-- **클라이언트 설정**(`scope: client`): 사용자별 개인 취향 — 알림 토글, 디버그 로그.
+- **월드 설정**(`scope: world`): GM이 만드는 공유 정본 — 연출용 메시지·이메일(발송 대상 포함), 브라우저 사이트, 게임 내 날짜, 시드 플래그.
+- **클라이언트 설정**(`scope: client`): 사용자별 개인 취향 — 알림 토글.
 - **Actor 플래그**: 캐릭터 연락처.
-- **User 플래그**: 통화 기록.
+- **User 플래그**: 통화 기록, 읽음 상태(버블톡·연출), 달력 개인 일정.
 - **ChatMessage 귓속말**(`flags.myth-phone`): 버블톡 실채팅 전체.
 
 (구체적 설정 키·정확한 수치는 여기 나열하지 않는다 — 코드가 정본이고, 나열하면 금방 낡는다.)
-- ChatMessage(`flags.myth-phone` 귓속말): 버블톡 실채팅 전체
