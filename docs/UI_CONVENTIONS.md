@@ -21,6 +21,11 @@
    → 고침: `.gm-editor-row`에 `height: auto; min-height: 0; line-height: normal` 추가(P3),
    아바타 열 `40px → 44px`(P2). 잘 되던 `.phone-conversation` 행과 같은 패턴.
    *(스크린샷 `겹치는 버그.png` = 고쳐진 버그의 기록)*
+   **재발 반복 → 공통 규칙으로 통합(2026-07-28)**: 이메일 목록(`.phone-email`)에서 또 재발
+   (누적 5회 지적). 한 클래스씩 때우는 방식을 버리고 **모든 목록 행 클래스에 한 번에 리셋을 거는
+   공통 블록**을 CSS 최상단에 신설(`.phone-conversation, .phone-contact, .phone-email,
+   .phone-site, .bubbletalk-*, .gm-editor-row`). **새 목록 행 클래스를 만들면 이 그룹에
+   추가하는 것까지가 한 세트다.** 개별 행의 `min-height`(버블톡 64/68px)는 뒤에서 재정의되어 유지.
 
 ## myth-phone 구체 규칙
 

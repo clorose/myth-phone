@@ -13,6 +13,22 @@
   display: none !important;
 }
 
+/* 폰 목록 행 공통 리셋 — 행이 <button>이라 Foundry 기본 버튼 높이·라인하이트에 눌리면
+   내용이 행 밖으로 넘쳐 아래 행과 겹친다. 같은 버그가 반복돼 공통 규칙으로 통합.
+   개별 규칙보다 앞에 둬서 각 행의 min-height 재정의(버블톡 64/68px 등)가 이긴다.
+   ※ 새 목록 행 클래스를 만들면 반드시 이 그룹에 추가할 것 */
+.phone-conversation,
+.phone-contact,
+.phone-email,
+.phone-site,
+.bubbletalk-conversation,
+.bubbletalk-friend,
+.gm-editor-row {
+  height: auto;
+  min-height: 0;
+  line-height: normal;
+}
+
 .smartphone-launcher {
   position: fixed;
   right: 304px;
