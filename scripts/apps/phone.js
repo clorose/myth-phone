@@ -20,7 +20,7 @@ export const phoneMethods = {
       </header>
       ${game.user.isGM ? `
       <button class="phone-outgoing-call" type="button">
-        <i class="fa-solid fa-headset"></i> 캐릭터로 전화 걸기
+        <i class="fa-solid fa-headset"></i> 연출 전화 걸기
       </button>` : ""}
       <div class="phone-recent-list">
         ${PhoneStore.callLog.map((entry) => this.callHistoryItem(
@@ -138,20 +138,14 @@ export const phoneMethods = {
   },
 
   renderOutgoingCallForm(content) {
-    const actors = this.npcActors();
     const players = game.users.filter((user) => user.active && !user.isGM);
     const scenes = Array.from(this.callScenes.values());
 
     content.innerHTML = `
       <header class="phone-page-header phone-dialer-header">
-        <p>전화</p><h2>캐릭터로 걸기</h2>
+        <p>전화</p><h2>연출 전화 걸기</h2>
       </header>
       <form class="phone-outgoing-form">
-        <label>발신 캐릭터
-          <select name="actorId">
-            ${actors.map((actor) => `<option value="${actor.id}">${esc(actor.name)}</option>`).join("")}
-          </select>
-        </label>
         <label>대상 플레이어
           <select name="userId">
             ${players.map((user) => `<option value="${user.id}">${esc(userDisplayName(user))}</option>`).join("")}
@@ -178,11 +172,14 @@ export const phoneMethods = {
         return;
       }
 
-      const actor = game.actors.get(fields.actorId.value);
+      // 발신자는 장면이 소유한다 — 1회용 발신자 때문에 Actor를 만들지 않는다.
+      // "발신번호 표시제한" 연출이므로 초상화 등 실체 연동도 하지 않는다.
+      const scene = this.callScenes.get(fields.sceneId.value);
       const caller = {
-        name: actor?.name ?? "알 수 없음",
-        initial: Array.from(actor?.name ?? "?")[0].toLocaleUpperCase(),
-        number: "발신번호 표시제한"
+        name: scene?.caller?.name ?? "알 수 없음",
+        initial: scene?.caller?.initial
+          ?? Array.from(scene?.caller?.name ?? "?")[0].toLocaleUpperCase(),
+        number: scene?.caller?.number ?? "발신번호 표시제한"
       };
       PhoneSocket.send("incoming-call", {
         callId: foundry.utils.randomID(),
