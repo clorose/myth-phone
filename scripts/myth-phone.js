@@ -263,8 +263,7 @@ Hooks.once("init", () => {
     type: Boolean,
     default: false
   });
-  // 게임 내 오늘 날짜 { m, d }. null이면 미설정 — 폰 시계는 현실 시간 폴백,
-  // 연출 시점 라벨은 오늘/어제 판정 없이 날짜만 표시한다.
+  // 게임 내 날짜 { m, d }. null = 미설정(폰 시계는 현실 시간).
   game.settings.register(MODULE_ID, "gameDate", {
     scope: "world",
     config: false,
