@@ -2644,38 +2644,13 @@
   background: var(--phone-accent);
 }
 
-/* 날짜 설정 줄 — 하단 도구 영역(가져오기/내보내기 위) */
-.gm-game-date {
+/* 항목 시점 입력(월/일)과 날짜 탭 */
+.gm-at-date {
   display: flex;
-  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
-  padding: 8px 14px 0;
-  border-top: 1px solid var(--phone-divider);
-  color: var(--phone-secondary);
-  font-size: 12px;
 }
 
-.gm-game-date span {
-  margin-right: 4px;
-  font-weight: 600;
-}
-
-.gm-game-date select {
-  width: auto;
-  height: 28px;
-  min-height: 0;
-  margin: 0;
-  padding: 0 4px;
-  border: 1px solid var(--phone-divider);
-  border-radius: 7px;
-  color: var(--phone-label);
-  background: white;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.gm-game-date input,
 .gm-at-date input {
   width: 52px;
   height: 28px;
@@ -2691,37 +2666,21 @@
   text-align: center;
 }
 
-.gm-game-date .gm-gd-save,
-.gm-game-date .gm-gd-clear {
-  height: 28px;
-  min-height: 0;
-  margin: 0 0 0 6px;
-  padding: 0 12px;
-  border: 1px solid var(--phone-divider);
-  border-radius: 7px;
+.gm-date-now {
+  margin: 12px 2px 0;
+  color: var(--phone-label);
+  font-size: 13px;
+}
+
+.gm-date-hint {
+  margin: 6px 2px 0;
   color: var(--phone-secondary);
-  background: white;
-  box-shadow: none;
   font-size: 12px;
-  font-weight: 600;
-  line-height: normal;
-  cursor: pointer;
 }
 
-.gm-game-date .gm-gd-save:hover,
-.gm-game-date .gm-gd-clear:hover {
-  border-color: var(--phone-accent);
-  color: var(--phone-accent);
-}
-
-.gm-game-date .gm-gd-clear {
-  margin-left: 0;
-}
-
-.gm-at-date {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.gm-compose.gm-date-actions {
+  grid-template-columns: 1fr 96px;
+  gap: 8px;
 }
 
 .gm-editor-list {

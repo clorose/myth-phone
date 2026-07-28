@@ -259,8 +259,19 @@ export const PhoneStore = {
   // 항목의 시점은 item.at = { m, d, t? } 하나. 표시 라벨은 게임 내 오늘(gameDate)과
   // 비교해 자동 계산한다 — 날짜가 넘어가면 "오늘"이 "어제"→"7월 3일"로 저절로 늙는다.
 
+  // 게임 내 날짜 { y, m, d }. 요일은 저장하지 않고 그레고리력으로 계산한다(현대 배경).
   gameDate() {
-    return game.settings.get(MODULE_ID, "gameDate") ?? null;
+    const gd = game.settings.get(MODULE_ID, "gameDate");
+    return gd?.y && gd?.m && gd?.d ? gd : null;
+  },
+
+  // 잠금화면 형식 그대로: "7월 6일 화요일"
+  gameDateLabel() {
+    const gd = this.gameDate();
+    if (!gd) return null;
+    const weekday = new Intl.DateTimeFormat("ko-KR", { weekday: "long" })
+      .format(new Date(gd.y, gd.m - 1, gd.d));
+    return `${gd.m}월 ${gd.d}일 ${weekday}`;
   },
 
   stagedTimeLabel(item, { detail = false } = {}) {
@@ -272,9 +283,13 @@ export const PhoneStore = {
     const dateText = `${at.m}월 ${at.d}일`;
     if (detail) return at.t ? `${dateText} ${at.t}` : dateText;
     const today = this.gameDate();
-    if (today?.m === at.m && today?.d === at.d) return at.t || "오늘";
-    // 어제 판정은 같은 달 안에서만 — 게임 달력이 없어 월 경계는 계산하지 않는다
-    if (today && today.m === at.m && today.d === at.d + 1) return "어제";
+    if (today) {
+      // 항목은 기준 날짜와 같은 해로 본다 — 연도 덕에 월 경계 넘는 어제 판정도 정확
+      const diffDays = Math.round(
+        (new Date(today.y, today.m - 1, today.d) - new Date(today.y, at.m - 1, at.d)) / 86400000);
+      if (diffDays === 0) return at.t || "오늘";
+      if (diffDays === 1) return "어제";
+    }
     return dateText;
   },
 

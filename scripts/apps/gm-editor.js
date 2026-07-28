@@ -18,9 +18,23 @@ export const gmEditorMethods = {
     PhoneStore.data[kind] = list;
   },
 
+  gmTabs(active) {
+    return `
+      <div class="gm-editor-tabs">
+        ${[["messages", "메시지"], ["emails", "이메일"], ["date", "날짜"]].map(([key, label]) =>
+          `<button class="gm-editor-tab ${active === key ? "is-active" : ""}" type="button" data-gm-tab="${key}">${label}</button>`).join("")}
+      </div>`;
+  },
+
+  bindGmTabs(content) {
+    content.querySelectorAll("[data-gm-tab]").forEach((btn) =>
+      btn.addEventListener("click", () => this.renderGmEditor(content, btn.dataset.gmTab)));
+  },
+
   renderGmEditor(content, tab = "messages") {
     if (!game.user.isGM) { this.close(); return; }
     content.closest(".smartphone-app-view")?.classList.remove("is-chat-open");
+    if (tab === "date") { this.tab = "date"; this.renderGmDate(content); return; }
     const kind = tab === "emails" ? "emails" : "messages";
     this.tab = kind;
     const list = this.editorData(kind);
@@ -47,36 +61,17 @@ export const gmEditorMethods = {
           <i class="fa-solid fa-plus"></i>
         </button>
       </header>
-      <div class="gm-editor-tabs">
-        <button class="gm-editor-tab ${kind === "messages" ? "is-active" : ""}" type="button" data-gm-tab="messages">메시지</button>
-        <button class="gm-editor-tab ${kind === "emails" ? "is-active" : ""}" type="button" data-gm-tab="emails">이메일</button>
-      </div>
+      ${this.gmTabs(kind)}
       <div class="gm-editor-list">
         ${rows || `<div class="bubbletalk-empty"><i class="fa-solid fa-feather-pointed"></i><p>항목이 없습니다. +로 추가하세요.</p></div>`}
       </div>
-      ${(() => {
-        const gameDate = PhoneStore.gameDate();
-        return `
-      <div class="gm-game-date">
-        <span>날짜</span>
-        <input type="number" min="1" max="12" data-gd="m" value="${gameDate?.m ?? ""}" aria-label="월">월
-        <input type="number" min="1" max="31" data-gd="d" value="${gameDate?.d ?? ""}" aria-label="일">일
-        <select data-gd="w" aria-label="요일">
-          ${["월", "화", "수", "목", "금", "토", "일"].map((w) =>
-            `<option value="${w}" ${gameDate?.w === w ? "selected" : ""}>${w}요일</option>`).join("")}
-        </select>
-        <button type="button" class="gm-gd-save">적용</button>
-        <button type="button" class="gm-gd-clear">초기화</button>
-      </div>`;
-      })()}
       <div class="gm-editor-io">
         <button type="button" data-gm-io="import"><i class="fa-solid fa-file-import"></i> 가져오기</button>
         <button type="button" data-gm-io="export"><i class="fa-solid fa-file-export"></i> 내보내기</button>
       </div>
     `;
 
-    content.querySelectorAll("[data-gm-tab]").forEach((btn) =>
-      btn.addEventListener("click", () => this.renderGmEditor(content, btn.dataset.gmTab)));
+    this.bindGmTabs(content);
     content.querySelectorAll(".gm-editor-row").forEach((row) => {
       row.addEventListener("click", (event) => {
         // 클릭은 항상 버튼(row)에 잡힌다(자식 아이콘으로 포인터가 안 감) — 로그로 확인.
@@ -99,23 +94,6 @@ export const gmEditorMethods = {
     });
     content.querySelector(".gm-editor-add").addEventListener("click", () =>
       this.gmEditorCreate(content, kind));
-    content.querySelector(".gm-gd-save").addEventListener("click", async () => {
-      const m = Number(content.querySelector('[data-gd="m"]').value);
-      const d = Number(content.querySelector('[data-gd="d"]').value);
-      if (!m || !d) {
-        ui.notifications.warn("MythPhone | 월과 일을 입력하세요.");
-        return;
-      }
-      const w = content.querySelector('[data-gd="w"]').value;
-      await game.settings.set(MODULE_ID, "gameDate", { m, d, w });
-      ui.notifications.info(`MythPhone | 날짜: ${m}월 ${d}일 ${w}요일`);
-    });
-    content.querySelector(".gm-gd-clear").addEventListener("click", async () => {
-      await game.settings.set(MODULE_ID, "gameDate", null);
-      content.querySelector('[data-gd="m"]').value = "";
-      content.querySelector('[data-gd="d"]').value = "";
-      ui.notifications.info("MythPhone | 날짜 초기화 (현실 날짜 표시)");
-    });
     content.querySelector('[data-gm-io="import"]').addEventListener("click", () =>
       this.renderGmEditorImport(content, kind));
     content.querySelector('[data-gm-io="export"]').addEventListener("click", () =>
@@ -375,6 +353,59 @@ export const gmEditorMethods = {
         });
         ta.addEventListener("blur", done, { once: true });
       }));
+  },
+
+  // ===== 날짜 탭: 게임 내 날짜(연/월/일) 설정. 요일은 그레고리력 자동 계산 =====
+  renderGmDate(content) {
+    const gd = PhoneStore.gameDate();
+    const label = PhoneStore.gameDateLabel();
+    content.innerHTML = `
+      <header class="phone-page-header gm-editor-header">
+        <p>연출 편집 · GM</p>
+        <h2>날짜</h2>
+      </header>
+      ${this.gmTabs("date")}
+      <div class="gm-editor-scroll">
+        <div class="gm-meta">
+          <label class="gm-fld"><span>연도</span><input type="number" min="1" data-gd="y" value="${gd?.y ?? ""}"></label>
+          <label class="gm-fld"><span>월</span><input type="number" min="1" max="12" data-gd="m" value="${gd?.m ?? ""}"></label>
+          <label class="gm-fld"><span>일</span><input type="number" min="1" max="31" data-gd="d" value="${gd?.d ?? ""}"></label>
+        </div>
+        <p class="gm-date-now">${label
+          ? `현재 설정: <b>${esc(label)}</b>`
+          : "미설정 — 폰에는 현실 날짜가 표시됩니다."}</p>
+        <p class="gm-date-hint">요일은 연도 기준 자동 계산. 플레이어 잠금화면 날짜 줄과 메시지 목록의
+        오늘/어제 라벨이 이 날짜를 따라갑니다.</p>
+      </div>
+      <div class="gm-compose gm-compose-save gm-date-actions">
+        <button class="gm-compose-add gm-date-save" type="button"><i class="fa-solid fa-check"></i> 적용</button>
+        <button class="gm-compose-add gm-date-clear" type="button">초기화</button>
+      </div>
+    `;
+
+    this.bindGmTabs(content);
+    content.querySelector(".gm-date-save").addEventListener("click", async () => {
+      const y = Number(content.querySelector('[data-gd="y"]').value);
+      const m = Number(content.querySelector('[data-gd="m"]').value);
+      const d = Number(content.querySelector('[data-gd="d"]').value);
+      if (!y || !m || !d) {
+        ui.notifications.warn("MythPhone | 연도·월·일을 모두 입력하세요.");
+        return;
+      }
+      const date = new Date(y, m - 1, d);
+      if (date.getMonth() !== m - 1 || date.getDate() !== d) {
+        ui.notifications.warn("MythPhone | 존재하지 않는 날짜입니다.");
+        return;
+      }
+      await game.settings.set(MODULE_ID, "gameDate", { y, m, d });
+      ui.notifications.info(`MythPhone | 날짜: ${PhoneStore.gameDateLabel()}`);
+      this.renderGmDate(content);
+    });
+    content.querySelector(".gm-date-clear").addEventListener("click", async () => {
+      await game.settings.set(MODULE_ID, "gameDate", null);
+      ui.notifications.info("MythPhone | 날짜 초기화 (현실 날짜 표시)");
+      this.renderGmDate(content);
+    });
   },
 
   // 항목의 게임 내 시점(마지막 메시지/수신 시점) 입력 — 월·일 + 선택 시각 텍스트.

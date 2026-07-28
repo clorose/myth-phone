@@ -197,11 +197,9 @@ class SmartphoneShell {
     wrapper.querySelector(".smartphone-clock").textContent = clock;
     wrapper.querySelector(".smartphone-hero-clock").textContent = clock;
     // 시계는 시계로 남기고, 잠금화면 날짜 줄만 게임 내 날짜로 바꿔치기한다.
-    // 원래 형식("7월 28일 화요일")을 유지 — 요일은 달력이 없어 GM이 지정한다.
-    const gameDate = game.settings.get(MODULE_ID, "gameDate");
-    wrapper.querySelector(".smartphone-date").textContent = gameDate?.m && gameDate?.d
-      ? `${gameDate.m}월 ${gameDate.d}일${gameDate.w ? ` ${gameDate.w}요일` : ""}`
-      : new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(now);
+    // 원래 형식("7월 28일 화요일") 유지 — 요일은 연도 기반 그레고리력 자동 계산.
+    wrapper.querySelector(".smartphone-date").textContent = PhoneStore.gameDateLabel()
+      ?? new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(now);
   }
 
   static close() {
