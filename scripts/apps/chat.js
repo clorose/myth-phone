@@ -320,16 +320,25 @@ export const chatMethods = {
     });
   },
 
+  // 단체방 아바타 타일: 참여자 초상화(없으면 글자)로 원을 꽉 채운다 — 카톡식, 앞의 4명까지
+  mosaicTiles(room) {
+    return (room.participantUserIds ?? []).slice(0, 4).map((id, index) => {
+      const user = game.users.get(id);
+      const img = userPortraitImg(user);
+      if (img) return `<img src="${esc(img)}" alt="">`;
+      const color = PhoneStore.groupPalette[index % PhoneStore.groupPalette.length];
+      return `<b style="background:${color}">${esc(Array.from(userDisplayName(user))[0])}</b>`;
+    }).join("");
+  },
+
   bubbleTalkConversationItem(conversation) {
     const isGroup = conversation.type === "group";
+    const memberCount = Math.min(conversation.participantUserIds?.length ?? 0, 4);
     return `
       <button class="bubbletalk-conversation ${conversation.unread ? "is-unread" : ""}" type="button"
         data-conversation-id="${conversation.id}" data-name="${esc(conversation.name)}">
-        ${isGroup && conversation.participants?.length
-          ? `<span class="bubbletalk-room-avatar is-mosaic">${
-              conversation.participants.slice(0, 4).map((member) =>
-                `<b style="background:${member.color}">${member.initial}</b>`).join("")
-            }</span>`
+        ${isGroup && memberCount
+          ? `<span class="bubbletalk-room-avatar is-mosaic has-${memberCount}">${this.mosaicTiles(conversation)}</span>`
           : `<span class="bubbletalk-room-avatar ${isGroup ? "is-group" : ""}">
               ${this.avatarHTML(isGroup ? null : this.roomImg(conversation), conversation.initial)}
               ${this.roomOnline(conversation) ? '<em class="bubbletalk-online-dot" aria-hidden="true"></em>' : ""}

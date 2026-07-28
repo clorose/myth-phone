@@ -2064,24 +2064,42 @@
   border-color: #dce9ee;
 }
 
+/* 단체방 아바타 — 카톡식: 참여자 초상화 원들이 아바타 원을 꽉 채운다 (3인 삼각 / 4인 2×2) */
 .bubbletalk-room-avatar.is-mosaic {
-  display: grid;
-  grid-template: repeat(2, 1fr) / repeat(2, 1fr);
-  gap: 2px;
-  padding: 3px;
-  box-sizing: border-box;
+  display: block;
   overflow: hidden;
   background: #eef1f3;
 }
 
-.bubbletalk-room-avatar.is-mosaic b {
+.bubbletalk-room-avatar.is-mosaic b,
+.bubbletalk-room-avatar.is-mosaic img {
+  position: absolute;
   display: grid;
+  width: 25px;
+  height: 25px;
   place-items: center;
-  border-radius: 5px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  box-sizing: border-box;
   color: #fff;
-  font-size: 7px;
+  font-size: 9px;
   font-weight: 700;
+  object-fit: fill;
 }
+
+.is-mosaic.has-4 > :nth-child(1) { top: 0; left: 0; }
+.is-mosaic.has-4 > :nth-child(2) { top: 0; right: 0; }
+.is-mosaic.has-4 > :nth-child(3) { bottom: 0; left: 0; }
+.is-mosaic.has-4 > :nth-child(4) { bottom: 0; right: 0; }
+
+.is-mosaic.has-3 > :nth-child(1) { top: 0; left: 10.5px; }
+.is-mosaic.has-3 > :nth-child(2) { bottom: 0; left: 0; }
+.is-mosaic.has-3 > :nth-child(3) { bottom: 0; right: 0; }
+
+.is-mosaic.has-2 > :nth-child(1) { top: 0; left: 0; }
+.is-mosaic.has-2 > :nth-child(2) { right: 0; bottom: 0; }
+
+.is-mosaic.has-1 > :nth-child(1) { top: 10.5px; left: 10.5px; }
 
 .bubbletalk-mute {
   color: #aeb9be;

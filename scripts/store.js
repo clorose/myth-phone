@@ -150,11 +150,7 @@ export const PhoneStore = {
     room.participantCount = room.participantUserIds.length;
     room.initial = Array.from(room.name)[0];
     room.status = `멤버 ${room.participantCount}명`;
-    // 목록 모자이크 아바타용
-    room.participants = room.participantUserIds.slice(0, 4).map((id, index) => ({
-      initial: Array.from(userDisplayName(game.users.get(id)))[0],
-      color: this.groupPalette[index % this.groupPalette.length]
-    }));
+    // 목록 모자이크 아바타는 렌더 시점에 participantUserIds로 직접 그린다 (chat.js mosaicTiles)
   },
 
   // 월드의 기존 ChatMessage에서 참여 중인 버블톡 방을 복원한다.
