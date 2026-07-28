@@ -210,7 +210,7 @@ export const gmEditorMethods = {
     // sentTo: [] = 미발송으로 시작 — 발송 버튼을 누르기 전엔 플레이어 폰에 없다
     // (안읽음은 편집기 입력값이 아니라 실제 읽음 추적으로 계산하므로 필드를 두지 않는다)
     if (kind === "messages") {
-      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", status: "", timelineTime: "", messages: [], sentTo: [] });
+      list.push({ id, name: "새 대화", initial: "?", preview: "", listTime: "", timelineTime: "", messages: [], sentTo: [] });
     } else {
       list.push({ id, from: { name: "새 보낸사람", address: "" }, subject: "새 메일", preview: "", time: "", body: "", sentTo: [] });
     }
@@ -247,7 +247,6 @@ export const gmEditorMethods = {
       <div class="gm-editor-scroll">
         <div class="gm-meta">
           <label class="gm-fld"><span>상대 이름</span><input data-gm-field="name" value="${esc(item.name || "")}"></label>
-          <label class="gm-fld"><span>상태 표시</span><input data-gm-field="status" value="${esc(item.status || "")}"></label>
           <label class="gm-fld"><span>목록 시각</span><input data-gm-field="listTime" value="${esc(item.listTime || "")}"></label>
           <label class="gm-fld gm-full"><span>타임라인 라벨</span><input data-gm-field="timelineTime" value="${esc(item.timelineTime || "")}"></label>
         </div>

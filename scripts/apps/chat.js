@@ -696,7 +696,6 @@ export const chatMethods = {
     ) ?? {
       name: "알 수 없음",
       initial: "?",
-      status: "오프라인",
       timelineTime: "",
       messages: []
     };
@@ -709,7 +708,7 @@ export const chatMethods = {
           <i class="fa-solid fa-chevron-left"></i>
         </button>
         <span class="phone-avatar">${esc(conversation.initial)}</span>
-        <div><strong>${esc(conversation.name)}</strong><small>${conversation.status}</small></div>
+        <div><strong>${esc(conversation.name)}</strong></div>
         <button type="button" aria-label="통화"><i class="fa-solid fa-phone"></i></button>
       </header>
       <div class="phone-chat-log">
