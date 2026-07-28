@@ -371,6 +371,11 @@ export const gmEditorMethods = {
           <label class="gm-fld"><span>월</span><input type="number" min="1" max="12" data-gd="m" value="${gd?.m ?? ""}"></label>
           <label class="gm-fld"><span>일</span><input type="number" min="1" max="31" data-gd="d" value="${gd?.d ?? ""}"></label>
         </div>
+        <div class="gm-date-quick">
+          <button type="button" data-gd-quick="tomorrow">내일로</button>
+          <button type="button" data-gd-quick="today">현실 오늘</button>
+          <button type="button" data-gd-quick="newyear">연초로</button>
+        </div>
         <p class="gm-date-now">${label
           ? `현재 설정: <b>${esc(label)}</b>`
           : "미설정 — 폰에는 현실 날짜가 표시됩니다."}</p>
@@ -406,6 +411,25 @@ export const gmEditorMethods = {
       ui.notifications.info("MythPhone | 날짜 초기화 (현실 날짜 표시)");
       this.renderGmDate(content);
     });
+    // 편의 이동: 기준은 현재 게임 날짜(미설정이면 현실 오늘)
+    content.querySelectorAll("[data-gd-quick]").forEach((btn) =>
+      btn.addEventListener("click", async () => {
+        const now = new Date();
+        const base = PhoneStore.gameDate()
+          ?? { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
+        let next;
+        if (btn.dataset.gdQuick === "tomorrow") {
+          const t = new Date(base.y, base.m - 1, base.d + 1);
+          next = { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+        } else if (btn.dataset.gdQuick === "today") {
+          next = { y: now.getFullYear(), m: now.getMonth() + 1, d: now.getDate() };
+        } else {
+          next = { y: base.y, m: 1, d: 1 };
+        }
+        await game.settings.set(MODULE_ID, "gameDate", next);
+        ui.notifications.info(`MythPhone | 날짜: ${PhoneStore.gameDateLabel()}`);
+        this.renderGmDate(content);
+      }));
   },
 
   // 항목의 게임 내 시점(마지막 메시지/수신 시점) 입력 — 월·일 + 선택 시각 텍스트.

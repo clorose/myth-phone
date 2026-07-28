@@ -2906,6 +2906,33 @@
   text-align: center;
 }
 
+.gm-date-quick {
+  display: flex;
+  gap: 6px;
+  margin: 10px 2px 0;
+}
+
+.gm-date-quick button {
+  height: 28px;
+  min-height: 0;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--phone-divider);
+  border-radius: 8px;
+  color: var(--phone-secondary);
+  background: white;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: normal;
+  cursor: pointer;
+}
+
+.gm-date-quick button:hover {
+  border-color: var(--phone-accent);
+  color: var(--phone-accent);
+}
+
 .gm-date-now {
   margin: 12px 2px 0;
   color: var(--phone-label);

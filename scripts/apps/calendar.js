@@ -37,8 +37,9 @@ export const calendarMethods = {
     const isSelected = (d) =>
       y === this.calSelected.y && m === this.calSelected.m && d === this.calSelected.d;
 
-    // 일정: 월드 공유 데이터 { id, m, d, title } — 연도 무관(매년 반복)
-    const allEvents = game.settings.get(MODULE_ID, "calendarEvents") ?? [];
+    // 일정: 유저별 개인 메모 { id, m, d, title } — 자기 플래그에 저장, 자기만 본다.
+    // (GM의 준비 메모가 플레이어에게 새면 안 되고, 플레이어 단서 메모도 개인 것이므로)
+    const allEvents = game.user.getFlag(MODULE_ID, "calendarEvents") ?? [];
     const eventsFor = (em, ed) => allEvents.filter((ev) => ev.m === em && ev.d === ed);
 
     const sel = this.calSelected;
@@ -80,14 +81,13 @@ export const calendarMethods = {
         ${selHoliday ? `<p class="phone-cal-ev is-holiday"><i class="fa-solid fa-flag"></i>${esc(selHoliday)}</p>` : ""}
         ${selEvents.map((ev) => `
           <p class="phone-cal-ev"><i class="fa-solid fa-circle"></i>${esc(ev.title)}
-            ${game.user.isGM ? `<button type="button" data-ev-del="${esc(ev.id)}" aria-label="삭제"><i class="fa-solid fa-xmark"></i></button>` : ""}
+            <button type="button" data-ev-del="${esc(ev.id)}" aria-label="삭제"><i class="fa-solid fa-xmark"></i></button>
           </p>`).join("")}
         ${!selHoliday && !selEvents.length ? `<p class="phone-cal-ev is-none">일정 없음</p>` : ""}
-        ${game.user.isGM ? `
         <form class="phone-cal-add">
-          <input name="title" maxlength="30" placeholder="일정 추가 (전체 공개)" autocomplete="off">
+          <input name="title" maxlength="30" placeholder="내 일정 추가 (나만 보임)" autocomplete="off">
           <button type="submit" aria-label="추가"><i class="fa-solid fa-plus"></i></button>
-        </form>` : ""}
+        </form>
       </div>
       ${gameDate ? "" : `<p class="phone-cal-note">게임 내 날짜 미설정 — 현실 날짜 기준</p>`}
     `;
@@ -109,19 +109,19 @@ export const calendarMethods = {
       this.renderCalendar(content, today.y, today.m);
     });
 
-    // GM: 선택한 날에 일정 추가/삭제 (월드 설정 — 전 클라이언트 공유)
-    content.querySelector(".phone-cal-add")?.addEventListener("submit", async (event) => {
+    // 선택한 날에 개인 일정 추가/삭제 (자기 유저 플래그 — 누구나, 자기 것만)
+    content.querySelector(".phone-cal-add").addEventListener("submit", async (event) => {
       event.preventDefault();
       const title = event.currentTarget.elements.title.value.trim();
       if (!title) return;
       const list = [...allEvents, { id: foundry.utils.randomID(), m: sel.m, d: sel.d, title }];
-      await game.settings.set(MODULE_ID, "calendarEvents", list);
+      await game.user.setFlag(MODULE_ID, "calendarEvents", list);
       this.renderCalendar(content, y, m);
     });
     content.querySelectorAll("[data-ev-del]").forEach((btn) =>
       btn.addEventListener("click", async () => {
         const list = allEvents.filter((ev) => ev.id !== btn.dataset.evDel);
-        await game.settings.set(MODULE_ID, "calendarEvents", list);
+        await game.user.setFlag(MODULE_ID, "calendarEvents", list);
         this.renderCalendar(content, y, m);
       }));
   },

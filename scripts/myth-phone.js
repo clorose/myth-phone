@@ -269,13 +269,6 @@ Hooks.once("init", () => {
     type: Object,
     default: null
   });
-  // 달력 일정 [{ id, m, d, title }] — GM이 작성, 전체 공개
-  game.settings.register(MODULE_ID, "calendarEvents", {
-    scope: "world",
-    config: false,
-    type: Array,
-    default: []
-  });
   // 알림 설정 (클라이언트별 개인 취향)
   game.settings.register(MODULE_ID, "notifEnabled", {
     scope: "client",
@@ -323,10 +316,6 @@ Hooks.once("ready", () => {
     SmartphoneShell.refreshOpenChatLog();
   });
   Hooks.on("updateSetting", (setting) => {
-    if (setting.key === `${MODULE_ID}.calendarEvents`) {
-      SmartphoneShell.refreshOpenPlayerData(); // 열린 달력 갱신
-      return;
-    }
     if (setting.key === `${MODULE_ID}.gameDate`) {
       // 날짜가 넘어가면 시계와 열린 목록의 오늘/어제 라벨을 즉시 갱신
       SmartphoneShell.updateClock(SmartphoneShell.wrapper);
