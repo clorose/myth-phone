@@ -1,4 +1,4 @@
-import { escapeHTML as esc, formatTime, userDisplayName, portraitImg, userPortraitImg } from "../utils.js";
+import { escapeHTML as esc, formatTime, formatHM, userDisplayName, portraitImg, userPortraitImg } from "../utils.js";
 import { debug, warn } from "../log.js";
 import { PhoneStore } from "../store.js";
 
@@ -713,12 +713,33 @@ export const chatMethods = {
       </header>
       <div class="phone-chat-log">
         ${(() => {
-          const label = PhoneStore.stagedTimeLabel(conversation, { detail: true });
-          return label ? `<time>${esc(label)}</time>` : "";
+          // 말풍선에 시점(at)이 하나라도 있으면 날짜 구분선·묶음 시각으로 그린다.
+          // 없으면(구 데이터) 기존처럼 상단 라벨 하나.
+          const bubbles = conversation.messages;
+          if (!bubbles.some((b) => b.at?.m && b.at?.d)) {
+            const label = PhoneStore.stagedTimeLabel(conversation, { detail: true });
+            return (label ? `<time>${esc(label)}</time>` : "")
+              + bubbles.map((b) => `<p class="is-${b.direction}">${esc(b.text)}</p>`).join("");
+          }
+          let prevDateKey = null;
+          return bubbles.map((b, i) => {
+            let sep = "";
+            if (b.at?.m && b.at?.d) {
+              const key = `${b.at.m}-${b.at.d}`;
+              if (key !== prevDateKey) sep = `<time>${b.at.m}월 ${b.at.d}일</time>`;
+              prevDateKey = key;
+            }
+            const bubble = `<p class="is-${b.direction}">${esc(b.text)}</p>`;
+            // 시각은 같은 방향·같은 시각 연속 묶음의 마지막에만 (카톡 방식)
+            const next = bubbles[i + 1];
+            const sameRun = next && next.direction === b.direction
+              && next.at?.t === b.at?.t && next.at?.m === b.at?.m && next.at?.d === b.at?.d;
+            if (!b.at?.t || sameRun) return sep + bubble;
+            return `${sep}<div class="msg-row is-${b.direction === "sent" ? "s" : "r"}">
+              ${bubble}<span class="msg-time">${esc(formatHM(b.at.t))}</span>
+            </div>`;
+          }).join("");
         })()}
-        ${conversation.messages.map((message) =>
-          `<p class="is-${message.direction}">${esc(message.text)}</p>`
-        ).join("")}
       </div>
       <form class="phone-composer">
         <button type="button" aria-label="첨부"><i class="fa-solid fa-plus"></i></button>

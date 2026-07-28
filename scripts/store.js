@@ -2,7 +2,7 @@
 // 렌더러는 여기서 데이터를 읽고, 데이터 변경은 emit으로 구독자에게 알린다.
 // (버블톡 실채팅 전환 시 ChatMessage 훅이 이 스토어를 갱신하는 구조를 전제)
 
-import { userDisplayName, formatTime } from "./utils.js";
+import { userDisplayName, formatTime, formatHM } from "./utils.js";
 import { debug } from "./log.js";
 
 const MODULE_ID = "myth-phone";
@@ -274,21 +274,31 @@ export const PhoneStore = {
     return `${gd.m}월 ${gd.d}일 ${weekday}`;
   },
 
+  // 대화의 시점 = 마지막으로 시점(at)을 가진 말풍선의 것 (파생값 — 별도 입력 없음)
+  lastAt(item) {
+    const bubbles = item?.messages ?? [];
+    for (let i = bubbles.length - 1; i >= 0; i--) {
+      if (bubbles[i].at?.m && bubbles[i].at?.d) return bubbles[i].at;
+    }
+    return null;
+  },
+
   stagedTimeLabel(item, { detail = false } = {}) {
-    const at = item.at;
+    // 대화(messages 보유)는 말풍선에서 파생, 이메일은 항목의 at 그대로
+    const at = item.messages ? this.lastAt(item) : item.at;
     if (!at?.m || !at?.d) {
       // 구 데이터 폴백: 옛 자유 텍스트는 그대로, 숫자 타임스탬프는 시각으로 포맷
       const legacy = detail ? (item.timelineTime || item.time || "") : (item.listTime || item.time || "");
       return formatTime(legacy);
     }
     const dateText = `${at.m}월 ${at.d}일`;
-    if (detail) return at.t ? `${dateText} ${at.t}` : dateText;
+    if (detail) return at.t ? `${dateText} ${formatHM(at.t)}` : dateText;
     const today = this.gameDate();
     if (today) {
       // 항목은 기준 날짜와 같은 해로 본다 — 연도 덕에 월 경계 넘는 어제 판정도 정확
       const diffDays = Math.round(
         (new Date(today.y, today.m - 1, today.d) - new Date(today.y, at.m - 1, at.d)) / 86400000);
-      if (diffDays === 0) return at.t || "오늘";
+      if (diffDays === 0) return at.t ? formatHM(at.t) : "오늘";
       if (diffDays === 1) return "어제";
     }
     return dateText;

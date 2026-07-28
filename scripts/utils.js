@@ -21,6 +21,15 @@ export function formatTime(value) {
   }).format(new Date(value));
 }
 
+// "HH:MM"(24시간, time input 값)을 "오후 6:35"로. 그 형식이 아니면(구 자유 텍스트) 그대로 통과.
+export function formatHM(value) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value ?? "");
+  if (!match) return value ?? "";
+  const hour = Number(match[1]);
+  const meridiem = hour < 12 ? "오전" : "오후";
+  return `${meridiem} ${hour % 12 || 12}:${match[2]}`;
+}
+
 export function formatDuration(totalSeconds) {
   const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
   const seconds = String(totalSeconds % 60).padStart(2, "0");

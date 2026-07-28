@@ -1039,6 +1039,39 @@
   text-align: center;
 }
 
+/* 날짜 구분선이 여러 개일 때(말풍선 단위 시점) 위 여백 */
+.phone-chat-log > time:not(:first-child) {
+  margin-top: 8px;
+}
+
+/* 말풍선 + 시각 묶음 행 — 시각은 같은 방향·시각 연속 묶음의 마지막에만 */
+.phone-chat-log .msg-row {
+  display: flex;
+  max-width: 88%;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.phone-chat-log .msg-row.is-r {
+  align-self: flex-start;
+}
+
+.phone-chat-log .msg-row.is-s {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.phone-chat-log .msg-row p {
+  max-width: 100%;
+}
+
+.phone-chat-log .msg-time {
+  flex: 0 0 auto;
+  padding-bottom: 2px;
+  color: #a3a5af;
+  font-size: 8.5px;
+}
+
 .phone-chat-log p {
   max-width: 78%;
   margin: 0;
@@ -3250,6 +3283,42 @@
   background: var(--phone-accent);
 }
 
+/* 캔버스 날짜 구분선·말풍선 시각 (플레이어 화면과 같은 문법) */
+.gm-date-sep {
+  margin: 6px 0 3px;
+  color: #999ba5;
+  font-size: 9px;
+  text-align: center;
+}
+
+.gm-bubble-when {
+  color: #a3a5af;
+  font-size: 9px;
+}
+
+.gm-at-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.gm-at-inline button {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  background: var(--phone-accent);
+  box-shadow: none;
+  font-size: 11px;
+  cursor: pointer;
+}
+
 .gm-bubble-tools {
   display: none;
   gap: 3px;
@@ -3292,6 +3361,45 @@
   font-size: 12.5px;
   line-height: 1.35;
   resize: none;
+}
+
+/* 말풍선 추가부 2줄 구성 — 줄마다 칼럼 독립(위 줄 폭이 아래 줄 비율을 오염시키지 않게) */
+.gm-compose.gm-compose-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gm-compose-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gm-compose-row.is-meta {
+  justify-content: space-between;
+}
+
+.gm-compose-msg .gm-seg button {
+  height: 24px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+
+.gm-compose-msg .gm-compose-input {
+  flex: 1;
+}
+
+.gm-compose-add.is-icon {
+  display: grid;
+  width: 30px;
+  min-width: 0;
+  padding: 0;
+  place-items: center;
+}
+
+.gm-at-date input[type="time"] {
+  width: auto;
 }
 
 .gm-compose {

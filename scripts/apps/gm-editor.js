@@ -1,4 +1,4 @@
-import { escapeHTML as esc, userDisplayName } from "../utils.js";
+import { escapeHTML as esc, userDisplayName, formatHM } from "../utils.js";
 import { PhoneStore } from "../store.js";
 import { PhoneSocket } from "../socket.js";
 
@@ -236,17 +236,35 @@ export const gmEditorMethods = {
     if (kind === "emails") { this.renderGmEmailDetail(content, list, item); return; }
 
     // ----- 메시지(문자) 편집: 말풍선을 실제 화면대로 쌓는다 -----
+    // 시간은 말풍선 단위(m.at = {m, d, t}) — 날짜가 바뀌는 지점에 구분선, 시각은 각 행에 표시
     content.closest(".smartphone-app-view")?.classList.remove("is-chat-open");
     this.gmComposeDir = this.gmComposeDir ?? "received";
-    const bubbles = (item.messages || []).map((m, i) => `
+    let prevDateKey = null;
+    const bubbles = (item.messages || []).map((m, i) => {
+      let sep = "";
+      if (m.at?.m && m.at?.d) {
+        const key = `${m.at.m}-${m.at.d}`;
+        if (key !== prevDateKey) sep = `<time class="gm-date-sep">${m.at.m}월 ${m.at.d}일</time>`;
+        prevDateKey = key;
+      }
+      return `${sep}
       <div class="gm-bubble-row is-${m.direction === "sent" ? "sent" : "received"}" data-i="${i}">
         <p>${esc(m.text || "")}</p>
+        <span class="gm-bubble-when" data-gm-when="${i}">${m.at?.t ? formatHM(m.at.t) : ""}</span>
         <span class="gm-bubble-tools">
           <button type="button" data-gm-flip="${i}" aria-label="방향 전환"><i class="fa-solid fa-right-left"></i></button>
+          <button type="button" data-gm-time="${i}" aria-label="시간 수정"><i class="fa-solid fa-clock"></i></button>
           <button type="button" data-gm-edit="${i}" aria-label="편집"><i class="fa-solid fa-pen"></i></button>
           <button type="button" data-gm-bdel="${i}" aria-label="삭제"><i class="fa-solid fa-trash"></i></button>
         </span>
-      </div>`).join("");
+      </div>`;
+    }).join("");
+
+    // 추가 줄의 날짜·시각은 sticky — 마지막 말풍선의 시점, 없으면 게임 오늘로 시작
+    if (!this.gmComposeAt) {
+      const seed = PhoneStore.lastAt(item) ?? PhoneStore.gameDate();
+      this.gmComposeAt = { m: seed?.m ?? "", d: seed?.d ?? "", t: seed?.t ?? "" };
+    }
 
     content.innerHTML = `
       <header class="phone-page-header gm-editor-header gm-editor-detail">
@@ -256,21 +274,29 @@ export const gmEditorMethods = {
       </header>
       <div class="gm-editor-scroll">
         <div class="gm-meta">
-          <label class="gm-fld"><span>상대 이름</span><input data-gm-field="name" value="${esc(item.name || "")}"></label>
-          ${this.gmAtFields(item)}
+          <label class="gm-fld gm-full"><span>상대 이름</span><input data-gm-field="name" value="${esc(item.name || "")}"></label>
         </div>
         <div class="gm-builder-head"><span>플레이어 폰에 그대로 보이는 화면</span><b>말풍선 ${item.messages?.length || 0}개</b></div>
         <div class="gm-canvas">
           ${bubbles || `<p class="gm-canvas-empty">아래에서 말풍선을 추가하세요.</p>`}
         </div>
       </div>
-      <div class="gm-compose">
-        <div class="gm-seg">
-          <button type="button" data-gm-dir="received" class="${this.gmComposeDir === "received" ? "is-on" : ""}">받음</button>
-          <button type="button" data-gm-dir="sent" class="${this.gmComposeDir === "sent" ? "is-on" : ""}">보냄</button>
+      <div class="gm-compose gm-compose-msg">
+        <div class="gm-compose-row is-meta">
+          <div class="gm-seg">
+            <button type="button" data-gm-dir="received" class="${this.gmComposeDir === "received" ? "is-on" : ""}">받음</button>
+            <button type="button" data-gm-dir="sent" class="${this.gmComposeDir === "sent" ? "is-on" : ""}">보냄</button>
+          </div>
+          <span class="gm-when gm-at-date">
+            <input type="number" min="1" max="12" data-gm-cat="m" value="${this.gmComposeAt.m}" aria-label="월">월
+            <input type="number" min="1" max="31" data-gm-cat="d" value="${this.gmComposeAt.d}" aria-label="일">일
+            <input type="time" data-gm-cat="t" value="${this.gmComposeAt.t}">
+          </span>
         </div>
-        <textarea class="gm-compose-input" rows="1" placeholder="말풍선 내용 · Enter로 추가"></textarea>
-        <button class="gm-compose-add" type="button">추가</button>
+        <div class="gm-compose-row">
+          <textarea class="gm-compose-input" rows="1" placeholder="말풍선 내용 · Enter로 추가"></textarea>
+          <button class="gm-compose-add is-icon" type="button" aria-label="추가"><i class="fa-solid fa-plus"></i></button>
+        </div>
       </div>
     `;
 
@@ -286,7 +312,7 @@ export const gmEditorMethods = {
       content.querySelectorAll("[data-gm-field]").forEach((el) => {
         item[el.dataset.gmField] = el.value;
       });
-      this.harvestAt(content, item);
+      delete item.at; // 대화 레벨 시점은 폐기 — 시간은 말풍선이 갖는다
       item.initial = Array.from(item.name || "?")[0] || "?";
       const last = item.messages?.[item.messages.length - 1];
       item.preview = last ? (last.text || "") : "";
@@ -311,8 +337,15 @@ export const gmEditorMethods = {
       const input = content.querySelector(".gm-compose-input");
       const text = input.value.trim();
       if (!text) return;
+      // sticky 시점 회수 — 다음 말풍선에도 유지된다
+      const m = Number(content.querySelector('[data-gm-cat="m"]').value) || "";
+      const d = Number(content.querySelector('[data-gm-cat="d"]').value) || "";
+      const t = content.querySelector('[data-gm-cat="t"]').value;
+      this.gmComposeAt = { m, d, t };
+      const bubble = { direction: this.gmComposeDir === "sent" ? "sent" : "received", text };
+      if (m && d) bubble.at = t ? { m, d, t } : { m, d };
       item.messages = item.messages || [];
-      item.messages.push({ direction: this.gmComposeDir === "sent" ? "sent" : "received", text });
+      item.messages.push(bubble);
       this.gmFocusCompose = true;
       await commit();
     };
@@ -352,6 +385,29 @@ export const gmEditorMethods = {
           if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); ta.blur(); }
         });
         ta.addEventListener("blur", done, { once: true });
+      }));
+    // 🕐: 그 말풍선의 시점만 그 자리에서 수정 (✓로 확정, 월/일 비우면 시점 제거)
+    content.querySelectorAll("[data-gm-time]").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        const i = Number(btn.dataset.gmTime);
+        const span = content.querySelector(`[data-gm-when="${i}"]`);
+        if (!span || span.querySelector("input")) return;
+        const at = item.messages[i].at ?? {};
+        span.innerHTML = `
+          <span class="gm-at-date gm-at-inline">
+            <input type="number" min="1" max="12" data-at-m value="${at.m ?? ""}" aria-label="월">월
+            <input type="number" min="1" max="31" data-at-d value="${at.d ?? ""}" aria-label="일">일
+            <input type="time" data-at-t value="${at.t ?? ""}">
+            <button type="button" data-at-ok aria-label="확정"><i class="fa-solid fa-check"></i></button>
+          </span>`;
+        span.querySelector("[data-at-ok]").addEventListener("click", async () => {
+          const m = Number(span.querySelector("[data-at-m]").value) || "";
+          const d = Number(span.querySelector("[data-at-d]").value) || "";
+          const t = span.querySelector("[data-at-t]").value;
+          if (m && d) item.messages[i].at = t ? { m, d, t } : { m, d };
+          else delete item.messages[i].at;
+          await commit();
+        });
       }));
   },
 
@@ -434,15 +490,15 @@ export const gmEditorMethods = {
 
   // 항목의 게임 내 시점(마지막 메시지/수신 시점) 입력 — 월·일 + 선택 시각 텍스트.
   // 표시 라벨(오늘/어제/날짜)은 게임 내 오늘과 비교해 자동 계산되므로 여기선 시점만 적는다.
-  gmAtFields(item) {
+  gmAtFields(item, what) {
     return `
-          <label class="gm-fld gm-at"><span>날짜</span>
+          <label class="gm-fld gm-at"><span>${what} 날짜</span>
             <span class="gm-at-date">
               <input type="number" min="1" max="12" data-gm-at="m" value="${item.at?.m ?? ""}" aria-label="월">월
               <input type="number" min="1" max="31" data-gm-at="d" value="${item.at?.d ?? ""}" aria-label="일">일
             </span>
           </label>
-          <label class="gm-fld"><span>시각 (선택)</span><input data-gm-at="t" value="${esc(item.at?.t || "")}" placeholder="예: 오후 6:35"></label>`;
+          <label class="gm-fld"><span>${what} 시각 (선택)</span><input type="time" data-gm-at="t" value="${esc(item.at?.t || "")}"></label>`;
   },
 
   harvestAt(content, item) {
@@ -467,7 +523,7 @@ export const gmEditorMethods = {
           <label class="gm-fld"><span>보낸사람 이름</span><input data-gm-field="from.name" value="${esc(item.from.name || "")}"></label>
           <label class="gm-fld"><span>보낸사람 주소</span><input data-gm-field="from.address" value="${esc(item.from.address || "")}"></label>
           <label class="gm-fld gm-full"><span>제목</span><input data-gm-field="subject" value="${esc(item.subject || "")}"></label>
-          ${this.gmAtFields(item)}
+          ${this.gmAtFields(item, "수신")}
           <label class="gm-fld gm-full"><span>본문</span><textarea data-gm-field="body" rows="9">${esc(item.body || "")}</textarea></label>
         </div>
       </div>
