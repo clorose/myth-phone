@@ -10,6 +10,9 @@
    → `.smartphone-app-view:has(.phone-browser-header) > .smartphone-back { display:none }`.
    GM 편집기 상세도 같은 방식(`:has(.gm-editor-detail)`).
    *(스크린샷 `뒤로가기 버튼 두개 겹치는 버그.png` = 이 고쳐진 버그의 기록)*
+   **재발(2026-07-28, 고침)**: 이메일 상세(`.phone-email-header`)도 자체 `‹`가 있는데 숨김 규칙에서
+   빠져 있었다 → 같은 `:has` 규칙에 셀렉터 추가. **자체 헤더를 새로 만들면 이 규칙에 추가하는 것까지가
+   한 세트다.**
 
 2. **목록 아바타끼리 세로 겹침** *(고침)*
    연출 편집 메시지 목록(`.gm-editor-row`)에서 공유 `.phone-avatar`(44px 고정)를 재사용했는데,
