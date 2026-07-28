@@ -25,10 +25,15 @@ export class GmEditorWindow extends ApplicationV2 {
 
   static #instance = null;
 
-  // 좌측 Scene Controls 버튼·API가 호출하는 진입점
+  // 좌측 Scene Controls 버튼·API가 호출하는 진입점.
+  // 닫힌 인스턴스를 재활용하지 않고 새로 만든다 — 닫힌 창 재렌더 실패로 못 여는 일 방지.
   static open() {
     if (!game.user.isGM) return null;
-    this.#instance ??= new this();
+    if (this.#instance?.rendered) {
+      this.#instance.bringToFront();
+      return this.#instance;
+    }
+    this.#instance = new this();
     this.#instance.render(true);
     return this.#instance;
   }

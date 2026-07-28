@@ -325,27 +325,17 @@ Hooks.once("ready", () => {
     });
 });
 
-// 좌측 Scene Controls 툴바에 GM 전용 "연출 편집기" 버튼을 넣는다 (v14 record 구조).
+// 좌측 Scene Controls의 토큰 컨트롤 안에 GM 전용 "GM툴" 버튼 툴을 넣는다 (v14 record 구조).
+// 별도 그룹으로 만들지 않는 이유: 그룹이면 ①그룹 아이콘+툴 아이콘이 같은 모양으로 2개 보이고
+// ②activeTool로 활성화된 버튼 툴은 재클릭 이벤트가 안 와 창을 닫으면 다시 못 연다.
 Hooks.on("getSceneControlButtons", (controls) => {
-  if (!game.user.isGM) return;
-  const open = () => GmEditorWindow.open();
-  controls[MODULE_ID] = {
-    name: MODULE_ID,
+  if (!game.user.isGM || !controls.tokens) return;
+  controls.tokens.tools["myth-phone-gm"] = {
+    name: "myth-phone-gm",
     title: "MythPhone GM툴",
     icon: "fa-solid fa-user-pen",
     order: 100,
-    visible: true,
-    onChange: () => {},
-    activeTool: "gm-editor",
-    tools: {
-      "gm-editor": {
-        name: "gm-editor",
-        title: "GM툴 열기",
-        icon: "fa-solid fa-user-pen",
-        order: 1,
-        button: true,
-        onChange: open,
-      },
-    },
+    button: true,
+    onChange: () => GmEditorWindow.open(),
   };
 });
