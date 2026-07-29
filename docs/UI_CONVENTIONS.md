@@ -1,49 +1,53 @@
-# myth-phone UI 규칙 — 겹침 방지 (모듈 전용)
+# MythPhone UI 규칙
 
-일반 원칙은 작업 공간 공통 문서 **`../../docs/ui-layout.md`** 를 따른다(P1·P2·P3, 체크리스트).
-이 문서는 그 원칙이 **myth-phone의 실제 CSS 클래스·선택자에 어떻게 적용되는지** 구체 규칙만 적는다.
+작업 공간 공통 원칙은 `../../docs/ui-layout.md`를 따른다. 이 문서는 MythPhone의 실제 선택자와
+컴포넌트에만 적용되는 불변식을 기록한다.
 
-## 지금까지 나온 겹침 (전부 같은 계열)
+## 스타일 스코프
 
-1. **전역 뒤로가기 × 뷰 자체 뒤로가기** *(고침)*
-   브라우저 뷰에 자체 `‹`를 넣었는데 전역 `.smartphone-back`을 안 숨겨 `«`처럼 두 개가 겹쳤다.
-   → `.smartphone-app-view:has(.phone-browser-header) > .smartphone-back { display:none }`.
-   GM 편집기 상세도 같은 방식(`:has(.gm-editor-detail)`).
-   *(스크린샷 `뒤로가기 버튼 두개 겹치는 버그.png` = 이 고쳐진 버그의 기록)*
-   **재발(2026-07-28, 고침)**: 이메일 상세(`.phone-email-header`)도 자체 `‹`가 있는데 숨김 규칙에서
-   빠져 있었다 → 같은 `:has` 규칙에 셀렉터 추가. **자체 헤더를 새로 만들면 이 규칙에 추가하는 것까지가
-   한 세트다.**
+- 폰 UI는 `#fvtt-smartphone` 아래로 제한한다.
+- 독립 GM 창은 `.mp-gm-app` 아래로 제한한다.
+- 두 루트가 공유하는 `--phone-*` 토큰은 각각의 루트에 정의한다.
+- Foundry 전역 요소를 직접 덮는 선택자를 추가하지 않는다.
 
-2. **목록 아바타끼리 세로 겹침** *(고침)*
-   연출 편집 메시지 목록(`.gm-editor-row`)에서 공유 `.phone-avatar`(44px 고정)를 재사용했는데,
-   행(버튼)이 Foundry 기본 버튼 높이·라인하이트를 중화하지 않아 눌린 버튼 밖으로 아바타가 넘쳐
-   아래 행과 포갰다. 아바타 열도 40px라 44px 아바타보다 좁았다.
-   → 고침: `.gm-editor-row`에 `height: auto; min-height: 0; line-height: normal` 추가(P3),
-   아바타 열 `40px → 44px`(P2). 잘 되던 `.phone-conversation` 행과 같은 패턴.
-   *(스크린샷 `겹치는 버그.png` = 고쳐진 버그의 기록)*
-   **재발 반복 → 공통 규칙으로 통합(2026-07-28)**: 이메일 목록(`.phone-email`)에서 또 재발
-   (누적 5회 지적). 한 클래스씩 때우는 방식을 버리고 **모든 목록 행 클래스에 한 번에 리셋을 거는
-   공통 블록**을 CSS 최상단에 신설(`.phone-conversation, .phone-contact, .phone-email,
-   .phone-site, .bubbletalk-*, .gm-editor-row`). **새 목록 행 클래스를 만들면 이 그룹에
-   추가하는 것까지가 한 세트다.** 개별 행의 `min-height`(버블톡 64/68px)는 뒤에서 재정의되어 유지.
+## 뒤로가기
 
-## myth-phone 구체 규칙
+- 전역 `.smartphone-back`은 앱에서 홈으로 돌아간다.
+- 대화·통화처럼 상태 클래스를 쓰는 화면은 `is-chat-open`, `is-call-screen`에서 전역 버튼을 숨긴다.
+- 자체 헤더 뒤로가기가 있는 화면은 해당 식별자를 `:has()` 숨김 규칙에 함께 추가한다.
+- 현재 자체 헤더를 사용하는 이메일·브라우저·GM 편집 상세에서 전역 버튼이 동시에 보이면 안 된다.
+- 자체 뒤로가기가 없는 `.phone-page-header`는 전역 버튼 자리를 위한 좌측 여백을 유지한다.
 
-### 전역 뒤로가기 (일반 원칙 P1의 적용)
-- 전역 `.smartphone-back`은 기본으로 모든 앱 뷰에 뜬다(누르면 홈).
-- 뷰 헤더에 자체 뒤로가기를 넣으면 그 뷰에서 전역 것을 숨긴다:
-  `.smartphone-app-view:has(<뷰 식별 클래스>) > .smartphone-back { display:none }`,
-  또는 상태 클래스(`is-chat-open`, `is-call-screen`).
-- 자체 뒤로가기를 안 넣으면 전역 것을 그대로 쓰고, `.phone-page-header`의 좌패딩 52px로 자리를 비운다.
+## 목록 행
 
-### 공유 아바타 (일반 원칙 P2·P3의 적용)
-- `.phone-avatar`는 44×44 고정이다. 목록 행에 재사용할 때:
-  - 그리드 아바타 열 폭을 44px 이상으로(현재 `.gm-editor-row`는 40px 트랙 → 넘침),
-  - 행에 `min-height`를 주거나, 아바타를 트랙 크기에 맞게 축소,
-  - 행이 `<button>`이면 Foundry 기본 버튼 높이 눌림을 `min-height: 0`으로 중화.
+Foundry의 기본 버튼 높이와 line-height가 목록 내용을 누르지 않도록 목록 행 공통 리셋을 적용한다.
 
-## 연출 편집 목록 아바타 — 적용된 수정
+현재 공통 대상:
 
-`.gm-editor-row`에 `height: auto; min-height: 0; line-height: normal`을 넣어 Foundry 기본
-버튼 높이 눌림을 중화하고, 아바타 열을 `40px → 44px`로 넓혔다. 잘 되던 `.phone-conversation`
-행과 동일한 패턴(그 행은 처음부터 이 리셋을 갖고 있었다).
+- `.phone-conversation`
+- `.phone-contact`
+- `.phone-email`
+- `.phone-site`
+- `.bubbletalk-conversation`
+- `.bubbletalk-friend`
+- `.gm-editor-row`
+
+새 목록 행을 `<button>`으로 만들면 이 그룹에 추가하고, 필요한 최소 높이는 앱별 규칙에서 다시 정한다.
+
+## 아바타
+
+- 공유 `.phone-avatar`는 44×44 고정 크기다.
+- 목록 그리드의 아바타 열은 실제 아바타보다 작게 만들지 않는다.
+- `.gm-editor-row`의 현재 아바타 열은 44px이다.
+- 초상화 이미지는 아바타 컨테이너에 절대 배치하고 `overflow: hidden`으로 원 밖을 자른다.
+- 비정사각 초상화도 사용자 결정에 따라 비율을 무시하고 원을 채운다.
+- 단체방 모자이크는 3인 삼각형, 4인 이상 앞의 4명을 2×2로 표시하며 초상화가 없으면 글자 타일을 쓴다.
+
+## 변경 후 확인
+
+- 목록·상세·빈 상태
+- 전역 뒤로가기와 자체 뒤로가기 중복
+- 홈·뒤로가기·ESC 흐름
+- 아바타가 행 밖으로 넘치거나 아래 행과 겹치는지
+- 폰과 독립 GM 창 사이에 스타일이 새는지
+- 창 크기와 배율을 바꿨을 때 주요 요소가 잘리지 않는지

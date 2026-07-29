@@ -2,5 +2,3 @@
 docs/design/
 # 사용자 개인 노트 (테스트 기록 등) — 로컬 전용
 docs/user/
-# 세션 임시 저장 (Compact 전 상태 메모) — git 추적 안 함, Syncthing으로만 공유
-Compact.md
